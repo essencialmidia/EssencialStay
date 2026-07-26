@@ -1,1 +1,6 @@
 frontend/.env
+
+# Arquivos locais e temporários
+*.log
+*.zip
+frontend/*.log
