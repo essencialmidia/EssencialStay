@@ -1,0 +1,26 @@
+
+  #  C:\Program Files\nodejs\node.exe[15584]: std::shared_ptr<InitializationResultImpl> __cdecl node::InitializeOncePerProcessInternal(const std::vector<std::string> &, ProcessInitializationFlags::Flags) at src\node.cc:1252
+  #  Assertion failed: ncrypto::CSPRNG(nullptr, 0)
+
+----- Native stack trace -----
+
+ 1: 00007FF7958074DA v8::base::CPU::has_dot_prod+220394
+ 2: 00007FF795886ACA node::InitializeOncePerProcess+10378
+ 3: 00007FF795887C07 node::Start+391
+ 4: 00007FF796A112F2 BIO_ssl_shutdown+3794
+ 5: 00007FF797CECB04 v8::platform::DelayedTaskQueue::Terminate+11202964
+ 6: 00007FFA310DE957 BaseThreadInitThunk+23
+ 7: 00007FFA3220AD6C RtlUserThreadStart+44
+
+  #  C:\Program Files\nodejs\node.exe[25380]: std::shared_ptr<InitializationResultImpl> __cdecl node::InitializeOncePerProcessInternal(const std::vector<std::string> &, ProcessInitializationFlags::Flags) at src\node.cc:1252
+  #  Assertion failed: ncrypto::CSPRNG(nullptr, 0)
+
+----- Native stack trace -----
+
+ 1: 00007FF7958074DA v8::base::CPU::has_dot_prod+220394
+ 2: 00007FF795886ACA node::InitializeOncePerProcess+10378
+ 3: 00007FF795887C07 node::Start+391
+ 4: 00007FF796A112F2 BIO_ssl_shutdown+3794
+ 5: 00007FF797CECB04 v8::platform::DelayedTaskQueue::Terminate+11202964
+ 6: 00007FFA310DE957 BaseThreadInitThunk+23
+ 7: 00007FFA3220AD6C RtlUserThreadStart+44

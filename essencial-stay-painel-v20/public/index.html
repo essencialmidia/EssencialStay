@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Essencial Stay — Painel de Controle</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="effects.css">
+</head>
+<body>
+  <header class="banner">
+    <svg class="banner-house" viewBox="0 0 44 44" aria-hidden="true">
+      <circle cx="17" cy="22" r="17" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+      <circle cx="25" cy="22" r="15" fill="#2f7fc4"/>
+      <rect x="9" y="18" width="4" height="16" fill="#bcdcf5"/>
+      <rect x="13" y="12" width="9" height="22" fill="#ffffff"/>
+      <rect x="16.5" y="16" width="2.4" height="2.4" fill="#e8b24d"/>
+      <rect x="16.5" y="21" width="2.4" height="2.4" fill="#e8b24d"/>
+      <rect x="16.5" y="26" width="2.4" height="2.4" fill="#e8b24d"/>
+    </svg>
+    <div class="banner-text">
+      <span class="banner-title">Bem-vindo</span>
+      <span class="banner-sub">essencial stay</span>
+    </div>
+  </header>
+
+  <div class="status-strip">
+    <span class="status-pill" id="connectionStatus">
+      <span class="dot"></span> conectando…
+    </span>
+    <span class="status-clock" id="clock">--:--</span>
+  </div>
+
+  <main class="tile-grid" id="deviceGrid">
+    <div class="empty-state" id="emptyState">
+      <p>Buscando dispositivos vinculados…</p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <button id="refreshBtn" class="refresh-btn">Atualizar dispositivos</button>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

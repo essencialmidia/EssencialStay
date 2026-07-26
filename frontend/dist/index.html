@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111827" />
+    <title>Essencial Stay</title>
+    <script type="module" crossorigin src="/assets/index-DJhLYAH4.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CJPOBKc1.css">
+  </head>
+  <body>
+    <script>
+      (function () {
+        var storedTheme = localStorage.getItem("essencial-stay-theme");
+        var systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        var theme = storedTheme === "system" || !storedTheme ? systemTheme : storedTheme;
+        document.documentElement.classList.toggle("dark", theme === "dark");
+      })();
+    </script>
+    <div id="root"></div>
+  </body>
+</html>

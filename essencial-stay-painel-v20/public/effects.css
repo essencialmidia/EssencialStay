@@ -1,0 +1,40 @@
+/* ──────────────────────────────────────────────────────────────────────
+   effects.css — efeitos visuais (relevo 3D, sombras, animações de toque)
+   Separado de style.css (que cuida só de layout/estrutura/cores).
+   ────────────────────────────────────────────────────────────────────── */
+
+.tile-icon-chip {
+  background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.30), rgba(0, 0, 0, 0.12));
+  box-shadow:
+    0 5px 0 rgba(0, 0, 0, 0.28),
+    0 8px 14px rgba(0, 0, 0, 0.38),
+    inset 0 1px 1px rgba(255, 255, 255, 0.35),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.22);
+  transform: translateY(0);
+}
+
+.tile.on .tile-icon-chip {
+  box-shadow:
+    0 5px 0 rgba(0, 0, 0, 0.3),
+    0 10px 18px rgba(0, 0, 0, 0.42),
+    0 0 14px rgba(255, 255, 255, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.25);
+}
+
+.tile-icon {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.tile:active .tile-icon-chip {
+  transform: translateY(4px);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.28),
+    0 2px 5px rgba(0, 0, 0, 0.32),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-icon-chip { transition: none !important; }
+}
