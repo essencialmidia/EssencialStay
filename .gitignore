@@ -5,5 +5,8 @@ frontend/.env
 *.zip
 frontend/*.log
 
-# Arquivo de build público do frontend (não contém segredos).
+# Arquivos de ambiente do frontend: somente o arquivo público de build é versionado.
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 !frontend/.env.production
