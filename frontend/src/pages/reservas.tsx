@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { PageHeader } from "../components/layout/page-header";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { FormField } from "../components/ui/form-field";
 import { Input } from "../components/ui/input";
 import { Modal } from "../components/ui/modal";
@@ -14,6 +14,9 @@ import { useToast } from "../components/ui/toast";
 import { hotelSummitStaysFixture } from "../demo/stays-demo.fixtures";
 import type { DemoCommunicationChannel, DemoGuestStay, DemoReservationSource, DemoStayBucket } from "../demo/stays-demo.types";
 import { getDemoPublicUrl } from "../lib/demo-public-url";
+import { AirbnbOperationCard } from "../components/reservas/airbnb-operation-card";
+import { useOrganization } from "../contexts/organization-context";
+import { addManualAirbnbReservation, clearManualAirbnbReservations, getManualAirbnbReservations, type ManualAirbnbReservation } from "../demo/manual-airbnb-reservations";
 
 type StayTab = DemoStayBucket | "all";
 type FormState = { name: string; phone: string; email: string; partySize: string; unit: string; checkIn: string; checkOut: string; notes: string; source: DemoReservationSource | ""; externalCode: string };
@@ -33,7 +36,11 @@ export function ReservasPage() {
   const [formStep, setFormStep] = useState(1);
   const [form, setForm] = useState<FormState>(emptyForm);
   const { showToast } = useToast();
+  const { organizacaoAtual } = useOrganization();
+  const [airbnbOpen, setAirbnbOpen] = useState(false); const [manualReservation, setManualReservation] = useState<ManualAirbnbReservation | null>(null);
   const navigate = useNavigate();
+  const isVilaNova = /vila nova|studio/i.test(organizacaoAtual?.nome_fantasia || organizacaoAtual?.nome || "");
+  const manualReservations = isVilaNova ? getManualAirbnbReservations(organizacaoAtual?.id) : [];
 
   const filtered = useMemo(() => stays.filter((stay) => (tab === "all" || stay.bucket === tab) && `${stay.guest.name} ${stay.unit}`.toLowerCase().includes(query.trim().toLowerCase())), [query, stays, tab]);
   const summary = [
@@ -72,9 +79,13 @@ export function ReservasPage() {
 
   return (
     <div className="space-y-7">
-      <PageHeader title="Hospedagens" description="Acompanhe chegadas, estadias, saídas e a preparação da experiência de cada hóspede." badge="Ambiente demonstrativo" actions={<Button variant="accent" onClick={() => setNewOpen(true)}><Plus className="size-4" />Nova hospedagem</Button>} />
+      <PageHeader title="Hospedagens" description="Acompanhe chegadas, estadias, saídas e a preparação da experiência de cada hóspede." badge="Ambiente demonstrativo" actions={<div className="flex gap-2"><Button variant="accent" onClick={() => isVilaNova ? setAirbnbOpen(true) : setNewOpen(true)}><Plus className="size-4" />{isVilaNova ? "Nova Reserva Airbnb" : "Nova hospedagem"}</Button>{isVilaNova && manualReservations.length > 0 && <Button variant="ghost" size="sm" onClick={() => { if (window.confirm("Limpar somente os dados demonstrativos desta organização?")) { clearManualAirbnbReservations(organizacaoAtual?.id || ""); setManualReservation(null); showToast("Dados demonstrativos removidos."); } }}>Limpar dados demonstrativos</Button>}</div>} />
 
       <div className="rounded-lg border border-info/20 bg-info/[0.06] px-4 py-3 text-sm"><span className="font-semibold">Hotel Summit Monaco:</span> hospedagens recebidas automaticamente por PMS em modo simulado. O cadastro manual permanece disponível como contingência.</div>
+      {isVilaNova && <AirbnbReservationModal open={airbnbOpen} organizationId={organizacaoAtual?.id || ""} onClose={() => setAirbnbOpen(false)} onCreated={(reservation) => { addManualAirbnbReservation(reservation); setManualReservation(reservation); setAirbnbOpen(false); showToast("Reserva e experiência do hóspede criadas em modo demonstrativo."); }} />}
+      {manualReservation && <ManualExperienceCard reservation={manualReservation} onClose={() => setManualReservation(null)} />}
+      {isVilaNova && !manualReservation && manualReservations.map((reservation) => <ManualExperienceCard key={reservation.id} reservation={reservation} onClose={() => setManualReservation(null)} />)}
+      {isVilaNova && (manualReservation ? [manualReservation] : manualReservations).map((reservation) => <AirbnbOperationCard key={`operation-${reservation.id}`} reservation={reservation} onUpdate={() => setManualReservation((current) => current?.id === reservation.id ? { ...current } : current)} />)}
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {summary.map((item) => <Card key={item.label}><CardContent className="flex items-center gap-4 p-4"><div className={`grid size-10 place-items-center rounded-md ${item.tone === "accent" ? "bg-accent/[0.12] text-accent" : item.tone === "success" ? "bg-success/[0.12] text-success" : item.tone === "warning" ? "bg-warning/[0.14] text-warning" : "bg-secondary text-muted-foreground"}`}><item.icon className="size-5" /></div><div><p className="text-2xl font-semibold tabular-nums">{item.value}</p><p className="text-xs text-muted-foreground">{item.label}</p></div></CardContent></Card>)}
@@ -106,6 +117,18 @@ function StayCard({ stay, onDetails, onMessage, onResend }: { stay: DemoGuestSta
 
 function PreparationBadge({ status }: { status: DemoGuestStay["preparationStatus"] }) {
   return <Badge variant={status === "Pronta" ? "success" : status === "Com pendência" ? "warning" : "muted"}>{status}</Badge>;
+}
+
+function AirbnbReservationModal({ open, organizationId, onClose, onCreated }: { open: boolean; organizationId: string; onClose: () => void; onCreated: (reservation: ManualAirbnbReservation) => void }) {
+  const [step, setStep] = useState(1); const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [checkIn, setCheckIn] = useState("2026-08-15T15:00"); const [checkOut, setCheckOut] = useState("2026-08-17T11:00"); const [guests, setGuests] = useState("2"); const [notes, setNotes] = useState(""); const [source, setSource] = useState<ManualAirbnbReservation["source"]>("Airbnb");
+  const nights = Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000));
+  function create() { const id = `demo-${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`; onCreated({ id, organizationId, guestName: name || "Hóspede demonstrativo", phone: phone || "+55 (11) 9••••-••••", checkIn, checkOut, guests: Number(guests), notes, source, portalUrl: `https://essencialstay.com.br/s/vila-nova-demo?reservaId=${id}`, pinMasked: "48••15", status: "Reserva criada", timeline: ["Reserva criada", "Portal criado", "Concierge criado", "PIN preparado", "QR gerado"] }); setStep(1); setName(""); setPhone(""); }
+  return <Modal open={open} title="Nova Reserva Airbnb" description="Fluxo manual demonstrativo para Studio Vila Nova." onClose={onClose}>{step === 1 ? <div className="space-y-3"><FormField label="Nome do hóspede *"><Input value={name} onChange={(event) => setName(event.target.value)} autoFocus /></FormField><FormField label="Telefone com WhatsApp *"><Input value={phone} onChange={(event) => setPhone(event.target.value)} /></FormField><div className="grid grid-cols-2 gap-3"><FormField label="Check-in *"><Input type="datetime-local" value={checkIn} onChange={(event) => setCheckIn(event.target.value)} /></FormField><FormField label="Check-out *"><Input type="datetime-local" value={checkOut} onChange={(event) => setCheckOut(event.target.value)} /></FormField></div><div className="grid grid-cols-2 gap-3"><FormField label="Hóspedes"><Input type="number" min="1" value={guests} onChange={(event) => setGuests(event.target.value)} /></FormField><FormField label="Origem"><Select value={source} onChange={(event) => setSource(event.target.value as ManualAirbnbReservation["source"])}><option>Airbnb</option><option>Booking</option><option>Direta</option><option>Outro</option></Select></FormField></div><FormField label="Observações"><Input value={notes} onChange={(event) => setNotes(event.target.value)} /></FormField><Button className="w-full" disabled={!name || !phone} onClick={() => setStep(2)}>Continuar</Button></div> : <div className="space-y-4"><div className="rounded-md bg-surface p-4 text-sm"><p className="font-semibold">{name}</p><p>{nights} noites · {phone} · {source}</p><p>{checkIn.replace("T", " ")} → {checkOut.replace("T", " ")}</p></div><Button className="w-full" onClick={create}>Criar experiência do hóspede</Button><Button className="w-full" variant="ghost" onClick={() => setStep(1)}>Voltar</Button></div>}</Modal>;
+}
+
+function ManualExperienceCard({ reservation, onClose }: { reservation: ManualAirbnbReservation; onClose: () => void }) {
+  const [sendOpen, setSendOpen] = useState(false); const [sent, setSent] = useState(false);
+  return <Card><CardHeader><CardTitle>Reserva criada com sucesso</CardTitle><CardDescription>Experiência completa criada localmente para {reservation.guestName}.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[["Hóspede", reservation.guestName], ["Portal", "Ativo"], ["PIN Yale", reservation.pinMasked], ["CRM", "Atualizado"]].map(([label, value]) => <div key={label} className="rounded-md border p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-sm font-medium">{value}</p></div>)}</div><div className="rounded-md bg-surface p-4 text-sm"><p className="font-medium">Experiência do Hóspede · 85%</p><p className="mt-2 text-muted-foreground">✓ Portal · ✓ Concierge · ✓ PIN · ✓ QR · ✓ Informações · ✓ WhatsApp preparado · ⏳ Check-in</p></div><div className="rounded-md border p-4 text-sm"><p className="font-medium">Timeline operacional</p><p className="mt-2 text-muted-foreground">✓ Reserva criada · ✓ Portal criado · ✓ Concierge criado · ✓ PIN preparado · ✓ QR gerado · ✓ Mensagem preparada · ⏳ Check-in aguardando</p></div><div className="flex flex-wrap gap-2"><Button onClick={() => window.open(reservation.portalUrl, "_blank", "noopener,noreferrer")}>Abrir Portal</Button><Button variant="outline" onClick={() => setSendOpen(true)}>Simular WhatsApp</Button><Button variant="ghost" onClick={onClose}>Fechar</Button></div><Modal open={sendOpen} title="WhatsApp demonstrativo" description="Nenhuma integração externa será utilizada." onClose={() => setSendOpen(false)}><div className="space-y-4 text-sm"><p>Olá {reservation.guestName.split(" ")[0]}!<br /><br />Sua reserva no Studio Vila Nova está confirmada.<br /><br />Confira todas as informações:<br />{reservation.portalUrl}<br /><br />Seu acesso será liberado automaticamente no horário do check-in.<br /><br />Equipe Essencial Stay.</p>{sent && <p className="rounded-md bg-success/[0.1] p-3 text-success">Mensagem simulada com sucesso. Nenhuma integração externa foi utilizada.</p>}<Button variant="outline" onClick={() => void navigator.clipboard?.writeText(reservation.portalUrl)}>Copiar mensagem</Button><Button onClick={() => setSent(true)}>Simular envio</Button></div></Modal></CardContent></Card>;
 }
 
 function StayDetailsModal({ stay, onClose, onMessage, onResend, onExperience }: { stay: DemoGuestStay | null; onClose: () => void; onMessage: () => void; onResend: (channel: DemoCommunicationChannel) => void; onExperience: () => void }) {
