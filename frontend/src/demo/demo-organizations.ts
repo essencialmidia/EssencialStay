@@ -1,0 +1,2 @@
+import type { Organizacao } from "../types/database";
+export function isVilaNovaDemoOrganization(organization?: Pick<Organizacao, "nome" | "nome_fantasia"> | null) { const value = `${organization?.nome_fantasia || ""} ${organization?.nome || ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); return value.includes("vila nova") || value.includes("studio"); }

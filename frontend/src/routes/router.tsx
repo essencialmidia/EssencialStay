@@ -1,6 +1,6 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
-import { BarChart3, CreditCard, Sparkles, Settings2, UsersRound } from "lucide-react";
+import { BarChart3, CreditCard, Sparkles, Settings2 } from "lucide-react";
 import { AdminShell } from "../components/admin/admin-shell";
 import { AppShell } from "../components/layout/app-shell";
 import { GlobalHomeButton } from "../components/navigation/global-home-button";
@@ -19,7 +19,9 @@ import { AmbientesPage } from "../pages/ambientes";
 import { DispositivosPage } from "../pages/dispositivos";
 import { DemoAdminPage } from "../pages/demo-admin";
 import { DemoGuestPortalPage } from "../pages/demo-guest-portal";
+import { DemoVilaNovaPortalPage } from "../pages/demo-vila-nova-portal";
 import { ExperienciaHospedePage } from "../pages/experiencia-hospede";
+import { GuestCrmPage } from "../pages/guest-crm";
 import { IntegracoesPage } from "../pages/integracoes";
 import { ForbiddenPage } from "../pages/forbidden";
 import { ModulePage } from "../pages/module-page";
@@ -40,6 +42,7 @@ const routes = [
   { path: "/demo/29-07", element: <DemoAdminPage /> },
   { path: "/demo/29-07/portal", element: <DemoGuestPortalPage /> },
   { path: "/s/hotel-monaco-demo", element: <DemoGuestPortalPage /> },
+  { path: "/s/vila-nova-demo", element: <DemoVilaNovaPortalPage /> },
   { path: "/demo/29-07/hospedagens", element: <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-[1440px]"><ReservasPage /></div></main> },
   { path: "/demo/29-07/*", element: <NotFoundPage /> },
   { element: <PublicRoute />, children: [{ path: "/login", element: <LoginPage /> }, { path: "/register", element: <RegisterPage /> }, { path: "/forgot-password", element: <ForgotPasswordPage /> }] },
@@ -76,7 +79,7 @@ const routes = [
           { path: "hospedagens", element: <Navigate to="/propriedades" replace /> },
           { path: "hospedagens/:propriedadeId", element: <PropriedadeDetalhesPage /> },
           { path: "reservas", element: <ReservasPage /> },
-          { path: "hospedes", element: <ModulePage title="Hóspedes" description="Área planejada para hóspedes e o relacionamento com suas estadias." icon={UsersRound} /> },
+          { path: "hospedes", element: <GuestCrmPage /> },
           { path: "experiencia-hospede", element: <ExperienciaHospedePage /> },
           { path: "portal-hospede", element: <Navigate to="/experiencia-hospede" replace /> },
           { path: "dispositivos", element: <DispositivosPage /> },

@@ -25,7 +25,7 @@ export const navigationSections: Array<{ label: string; items: NavigationItem[] 
       { title: "Propriedades", path: "/propriedades", icon: Hotel, description: "Propriedades e unidades da empresa atual." },
       { title: "Ambientes", path: "/ambientes", icon: MapPinned, description: "Ambientes físicos das propriedades." },
       { title: "Reservas", path: "/reservas", icon: CalendarDays, description: "Agenda e fluxo de hospedagens." },
-      { title: "Hóspedes", path: "/hospedes", icon: UsersRound, description: "Pessoas vinculadas às estadias." },
+      { title: "Histórico e CRM", path: "/hospedes", icon: UsersRound, description: "Histórico, preferências e relacionamento com hóspedes." },
       { title: "Experiência do Hóspede", path: "/experiencia-hospede", icon: MessageSquareText, description: "Jornada digital antes, durante e após a estadia." },
     ],
   },
