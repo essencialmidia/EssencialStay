@@ -1,4 +1,4 @@
-import { Building2, Pencil, Plus, Power, RotateCcw } from "lucide-react";
+import { Building2, ExternalLink, Eye, Pencil, Plus, Power, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { OrganizationForm } from "../../components/admin/organization-form";
@@ -79,7 +79,7 @@ export function AdminCompaniesPage() {
   return <div className="space-y-8">
     <PageHeader title="Gerenciar empresas" description="Empresas clientes e seus contextos operacionais no Essencial Stay." actions={canManagePlatform ? <Button onClick={() => navigate("/onboarding?modo=nova-empresa")}><Plus className="size-4" />Nova empresa cliente</Button> : undefined} />
     {data.organizacoes.length === 0 ? <EmptyState title="Nenhuma empresa cliente" description="Cadastre a primeira empresa para iniciar sua estrutura operacional." icon={Building2} /> : <DataTable
-      columns={[{ key: "nome", header: "Nome" }, { key: "fantasia", header: "Nome fantasia" }, { key: "documento", header: "Documento" }, { key: "tipo", header: "Tipo" }, { key: "propriedades", header: "Propriedades" }, { key: "unidades", header: "Unidades" }, { key: "status", header: "Status" }, { key: "acoes", header: "", className: "w-24 text-right" }]}
+      columns={[{ key: "nome", header: "Nome" }, { key: "fantasia", header: "Nome fantasia" }, { key: "documento", header: "Documento" }, { key: "tipo", header: "Tipo" }, { key: "propriedades", header: "Propriedades" }, { key: "unidades", header: "Unidades" }, { key: "status", header: "Status" }, { key: "acoes", header: "", className: "w-40 text-right" }]}
       rows={data.organizacoes.map((organization) => ({
         nome: <span className="font-medium">{organization.nome}</span>,
         fantasia: <span className="text-muted-foreground">{organization.nome_fantasia || "Não informado"}</span>,
@@ -89,6 +89,8 @@ export function AdminCompaniesPage() {
         unidades: <span className="tabular-nums">{unitCounts[organization.id] ?? 0}</span>,
         status: <Badge variant={organization.status === "ativo" ? "success" : organization.status === "suspenso" ? "warning" : "muted"}>{statusLabels[organization.status]}</Badge>,
         acoes: canManagePlatform ? <div className="flex justify-end gap-1">
+          <Tooltip content="Ver detalhes"><Button size="icon" variant="ghost" onClick={() => navigate(`/admin/empresas/${organization.id}`)} aria-label={`Ver detalhes de ${organization.nome}`}><Eye className="size-4" /></Button></Tooltip>
+          <Tooltip content="Acessar painel da empresa"><Button size="icon" variant="ghost" onClick={() => navigate(`/admin/empresas/${organization.id}/painel`)} aria-label={`Acessar painel da empresa ${organization.nome}`}><ExternalLink className="size-4" /></Button></Tooltip>
           <Tooltip content="Editar"><Button size="icon" variant="ghost" onClick={() => setEditing(organization)} aria-label={`Editar ${organization.nome}`}><Pencil className="size-4" /></Button></Tooltip>
           <Tooltip content={organization.status === "ativo" ? "Inativar" : "Reativar"}><Button size="icon" variant="ghost" disabled={changingStatusId === organization.id} onClick={() => void changeStatus(organization)} aria-label={`${organization.status === "ativo" ? "Inativar" : "Reativar"} ${organization.nome}`}>{organization.status === "ativo" ? <Power className="size-4" /> : <RotateCcw className="size-4" />}</Button></Tooltip>
         </div> : <span />,

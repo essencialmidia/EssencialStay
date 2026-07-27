@@ -31,6 +31,7 @@ import { PropriedadeDetalhesPage } from "../pages/propriedade-detalhes";
 import { PropriedadesPage } from "../pages/propriedades";
 import { ReservasPage } from "../pages/reservas";
 import { AdminGate } from "./admin-gate";
+import { AdminOrganizationPanel } from "./admin-organization-panel";
 import { OrganizationGate } from "./client-gate";
 import { ProtectedRoute } from "./protected-route";
 import { PublicRoute } from "./public-route";
@@ -54,6 +55,7 @@ const routes = [
           { path: "empresas", element: <AdminCompaniesPage /> },
           { path: "empresas/nova", element: <Navigate to="/onboarding?modo=nova-empresa" replace /> },
           { path: "empresas/:id", element: <AdminCompanyDetailsPage /> },
+          { path: "empresas/:organizacaoId/painel", element: <AdminOrganizationPanel /> },
           { path: "empresas/:id/propriedades/nova", element: <AdminPropertyFormPage /> },
           { path: "propriedades/:id", element: <AdminPropertyDetailsPage /> },
           { path: "propriedades/:id/unidades/nova", element: <AdminUnitFormPage /> },

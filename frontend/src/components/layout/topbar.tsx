@@ -4,6 +4,7 @@ import { ThemeSelector } from "../navigation/theme-selector";
 import { CompanySwitcher } from "../navigation/company-switcher";
 import { useAuth } from "../../contexts/auth-context";
 import { usePlatformAdmin } from "../../contexts/platform-admin-context";
+import { useOrganization } from "../../contexts/organization-context";
 import { logout } from "../../services/auth.service";
 import { Avatar } from "../ui/avatar";
 import { Button } from "../ui/button";
@@ -21,6 +22,7 @@ type TopbarProps = {
 
 export function Topbar({ title, sidebarCollapsed, onMenuClick, onCollapseClick }: TopbarProps) {
   const { isPlatformAdmin } = usePlatformAdmin();
+  const { organizacaoAdministrativa, limparOrganizacaoAdministrativa } = useOrganization();
   const { user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ export function Topbar({ title, sidebarCollapsed, onMenuClick, onCollapseClick }
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur-xl">
+      {organizacaoAdministrativa && <div className="flex min-h-10 items-center justify-between gap-3 border-b border-accent/20 bg-accent/10 px-4 py-2 text-sm sm:px-6 lg:px-8"><span className="min-w-0 truncate"><span className="mr-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Administrador global</span><span className="font-medium">Visualizando: {organizacaoAdministrativa.nome_fantasia || organizacaoAdministrativa.nome}</span></span><Button size="sm" variant="outline" onClick={() => { limparOrganizacaoAdministrativa(); navigate("/admin"); }}>Sair deste contexto</Button></div>}
       <div className="flex h-[72px] items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
         <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick} aria-label="Abrir navegação">
           <Menu className="size-5" />

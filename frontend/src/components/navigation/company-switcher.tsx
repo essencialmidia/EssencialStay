@@ -23,8 +23,8 @@ export function CompanySwitcher({ className, compact = false, eyebrow = "Empresa
     icon: Building2,
     selected: organizacao.id === organizacaoAtual?.id,
     onClick: () => {
-      setOrganizacaoAtualId(organizacao.id);
-      navigate("/dashboard");
+      if (canManagePlatform) navigate(`/admin/empresas/${organizacao.id}/painel`);
+      else { setOrganizacaoAtualId(organizacao.id); navigate("/dashboard"); }
     },
   }));
 

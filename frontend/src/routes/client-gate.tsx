@@ -4,10 +4,10 @@ import { useOrganization } from "../contexts/organization-context";
 import { usePlatformAdmin } from "../contexts/platform-admin-context";
 
 export function OrganizationGate() {
-  const { organizacoes, loading } = useOrganization();
+  const { organizacoes, organizacaoAdministrativa, loading } = useOrganization();
   const { isPlatformAdmin, loading: adminLoading } = usePlatformAdmin();
   if (loading || adminLoading) return <LoadingState label="Validando acesso" />;
-  if (isPlatformAdmin) return <Navigate to="/admin" replace />;
+  if (isPlatformAdmin) return organizacaoAdministrativa ? <Outlet /> : <Navigate to="/admin" replace />;
   if (organizacoes.length === 0) {
     return <Navigate to="/onboarding" replace />;
   }

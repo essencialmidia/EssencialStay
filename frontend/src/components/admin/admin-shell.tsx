@@ -1,4 +1,4 @@
-import { BarChart3, Building2, ChevronDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Settings2, ShieldCheck } from "lucide-react";
+import { BarChart3, Building2, ChevronDown, ExternalLink, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Settings2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/auth-context";
@@ -44,17 +44,17 @@ function AdminSidebar({ collapsed = false, onNavigate }: { collapsed?: boolean; 
 }
 
 function AdminTopbar({ collapsed, onCollapse, onMenu }: { collapsed: boolean; onCollapse: () => void; onMenu: () => void }) {
-  const { organizacoesAtivas, setOrganizacaoAtualId } = useOrganization();
+  const { organizacoesAtivas } = useOrganization();
   const { user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const displayName = typeof user?.user_metadata.nome_completo === "string" ? user.user_metadata.nome_completo : user?.email ?? "Administrador";
   const initials = displayName.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join("").toUpperCase();
   async function handleLogout() { try { await logout(); navigate("/login", { replace: true }); } catch (error) { showToast(getAuthErrorMessage(error, "Não foi possível sair."), "error"); } }
-  function selectContext(value: string) { if (value === "admin") return; setOrganizacaoAtualId(value); navigate("/dashboard"); }
+  function selectContext(value: string) { if (value === "admin") { navigate("/admin"); return; } navigate(`/admin/empresas/${value}/painel`); }
   return <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur-xl"><div className="flex h-[72px] items-center gap-2 px-4 sm:px-6 lg:px-8">
     <Button size="icon" variant="ghost" className="lg:hidden" onClick={onMenu} aria-label="Abrir navegação"><Menu className="size-5" /></Button><Button size="icon" variant="ghost" className="hidden lg:inline-flex" onClick={onCollapse} aria-label="Alternar sidebar">{collapsed ? <PanelLeftOpen className="size-[18px]" /> : <PanelLeftClose className="size-[18px]" />}</Button>
     <div className="relative min-w-0 max-w-xs flex-1"><Select value="admin" onChange={(event) => selectContext(event.target.value)} className="appearance-none pr-8 font-medium" aria-label="Selecionar contexto"><option value="admin">Administração Essencial Stay</option>{organizacoesAtivas.map((item) => <option key={item.id} value={item.id}>Empresa atual: {item.nome_fantasia || item.nome}</option>)}</Select><ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /></div>
-    <div className="ml-auto flex items-center gap-1"><ThemeSelector /><DropdownMenu align="right" trigger={<Avatar>{initials || "ES"}</Avatar>} items={[{ label: "Ir para operação", onClick: () => navigate("/dashboard") }, { label: "Sair", onClick: () => void handleLogout(), destructive: true }]} /><Button variant="ghost" size="icon" className="hidden" aria-label="Sair"><LogOut className="size-4" /></Button></div>
+    <div className="ml-auto flex items-center gap-1"><Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={() => window.open("/demo/29-07", "_blank", "noopener,noreferrer")}><ExternalLink className="size-4" />Apresentar demo</Button><ThemeSelector /><DropdownMenu align="right" trigger={<Avatar>{initials || "ES"}</Avatar>} items={[{ label: "Sair", onClick: () => void handleLogout(), destructive: true }]} /><Button variant="ghost" size="icon" className="hidden" aria-label="Sair"><LogOut className="size-4" /></Button></div>
   </div></header>;
 }
