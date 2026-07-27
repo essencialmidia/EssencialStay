@@ -13,15 +13,20 @@ type PlatformAdminContextValue = {
 const PlatformAdminContext = createContext<PlatformAdminContextValue | null>(null);
 
 export function PlatformAdminProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [administrador, setAdministrador] = useState<AdministradorPlataforma | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
+    if (authLoading) {
+      setLoading(true);
+      return () => { active = false; };
+    }
     if (!user) {
       setAdministrador(null);
-      return;
+      setLoading(false);
+      return () => { active = false; };
     }
     setLoading(true);
     getAdministradorAtual(user.id)
@@ -32,7 +37,7 @@ export function PlatformAdminProvider({ children }: { children: ReactNode }) {
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [user]);
+  }, [authLoading, user]);
 
   const value = useMemo(() => ({
     administrador,

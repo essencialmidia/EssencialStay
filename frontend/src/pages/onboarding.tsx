@@ -15,6 +15,7 @@ import { Select } from "../components/ui/select";
 import { useToast } from "../components/ui/toast";
 import { useAuth } from "../contexts/auth-context";
 import { useOrganization } from "../contexts/organization-context";
+import { usePlatformAdmin } from "../contexts/platform-admin-context";
 import { marcasAutomacao, nomesMarcas, nomesRecursos, recursosDisponiveis, mapearRecursosInteligentes } from "../lib/recursos-inteligentes";
 import { cn } from "../lib/utils";
 import { finalizarOnboarding, OnboardingOperationError, temOnboardingPendente } from "../services/onboarding.service";
@@ -31,15 +32,17 @@ const steps = [{ title: "Empresa cliente", description: "Tenant da operação", 
 const fields: Array<Array<keyof Values>> = [["empresaNome", "empresaFantasia", "empresaTipo", "empresaDocumento", "empresaEmail", "empresaTelefone", "logo"], ["propriedadeNome", "propriedadeTipo"], ["automacaoStatus", "automacaoMarca", "automacaoMarcaOutro", "automacaoModelo", "automacaoSituacao", "automacaoInstalador", "recursos"], ["unidadeNome", "unidadeCodigo", "unidadeTipo", "unidadeCapacidade"]];
 
 export function OnboardingPage() {
-  const { user } = useAuth(); const { organizacoes, loading, reloadOrganizacoes, setOrganizacaoAtualId } = useOrganization(); const { showToast } = useToast(); const navigate = useNavigate();
+  const { user } = useAuth(); const { organizacoes, loading, reloadOrganizacoes, setOrganizacaoAtualId } = useOrganization(); const { isPlatformAdmin, loading: adminLoading } = usePlatformAdmin(); const { showToast } = useToast(); const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const criandoNovaEmpresa = searchParams.get("modo") === "nova-empresa";
   const [step, setStep] = useState(0); const [submitting, setSubmitting] = useState(false); const [progress, setProgress] = useState(""); const [error, setError] = useState<string | null>(null);
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { empresaNome: typeof user?.user_metadata.nome_completo === "string" ? user.user_metadata.nome_completo : "", empresaFantasia: "", empresaTipo: "pessoa_juridica", empresaDocumento: "", empresaEmail: user?.email ?? "", empresaTelefone: "", propriedadeNome: "", propriedadeTipo: "hotel", automacaoStatus: "nao_possui", automacaoMarca: "nao_informada", automacaoMarcaOutro: "", automacaoModelo: "", automacaoInstalador: "nao_informado", recursos: [], unidadeNome: "", unidadeCodigo: "", unidadeTipo: "standard", unidadeCapacidade: 2 } });
   const automationStatus = form.watch("automacaoStatus"); const selectedBrand = form.watch("automacaoMarca");
   if (!user) return <Navigate to="/login" replace />;
+  if (adminLoading) return <main className="grid min-h-screen place-items-center"><p className="text-sm text-muted-foreground">Validando acesso administrativo</p></main>;
+  if (isPlatformAdmin && !criandoNovaEmpresa) return <Navigate to="/admin" replace />;
   const currentUser = user;
-  if (!criandoNovaEmpresa && !loading && organizacoes.length > 0 && !temOnboardingPendente(currentUser.id)) return <Navigate to="/dashboard" replace />;
+  if (!isPlatformAdmin && !loading && organizacoes.length > 0 && !temOnboardingPendente(currentUser.id)) return <Navigate to="/dashboard" replace />;
   async function next() { if (await form.trigger(fields[step])) { setError(null); setStep((current) => Math.min(current + 1, steps.length - 1)); } }
   async function submit(values: Values) {
     setSubmitting(true); setError(null);
