@@ -219,7 +219,7 @@ function ManualExperienceCard({ reservation, onClose, onUpdate, onDemoCompleted,
         updateManualAirbnbAccess(reservation.id, { accessStatus: "generating", accessPrepared: false }, ["Portal preparado"]);
         onUpdate();
         const result = await DemoAutomaticAccessProvider.createTemporaryAccess({ reservationId: reservation.id, unitId: reservation.unitId || "apartamento-demo-zigbee", guestName: reservation.guestName, validFrom: reservation.checkIn, validUntil: reservation.checkOut });
-        if (result.status === "failed" || !result.code) {
+        if (result.status === "failed") {
             updateManualAirbnbAccess(reservation.id, { accessStatus: "generation_failed", accessPrepared: false }, ["Falha na geração demonstrativa"]);
             showToast("Falha na geração demonstrativa.");
         }
