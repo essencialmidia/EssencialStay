@@ -8,8 +8,8 @@ type GuideStep = { step: number; title: string; text: string };
 
 function resolveGuideStep(reservation: ManualAirbnbReservation): GuideStep {
   const timeline = reservation.timeline || [];
-  if (reservation.status === "Experiência enviada") return { step: 8, title: "Hospedagem preparada", text: "A experiência foi enviada ao hóspede e a demonstração será concluída." };
-  if (timeline.includes("Mensagem preparada") || timeline.includes("Mensagem enviada")) return { step: 7, title: "Mensagem pronta", text: "A comunicação está pronta para ser enviada ao hóspede." };
+  if (reservation.sent) return { step: 8, title: "Trabalho do anfitrião concluído", text: "A experiência foi enviada ao hóspede e a demonstração foi concluída." };
+  if (timeline.includes("Mensagem preparada")) return { step: 7, title: "Hospedagem preparada", text: "O Essencial Stay concluiu a preparação. Confirme o envio das informações ao hóspede." };
   if (timeline.includes("QR Code criado") || timeline.includes("QR criado")) return { step: 6, title: "QR Code criado", text: "O QR Code demonstrativo já está disponível no Portal." };
   if (timeline.includes("Portal atualizado") || timeline.includes("Portal preparado")) return { step: 5, title: "Portal preparado", text: "O Portal do Hóspede foi preparado para a chegada." };
   if (reservation.accessPrepared) return { step: 4, title: reservation.lockMode === "automatic-demo" ? "Acesso Ekaza preparado" : "PIN Yale confirmado", text: "A chave digital está pronta para a hospedagem." };
