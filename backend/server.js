@@ -51,4 +51,4 @@ const server = createServer(async (request, response) => {
 });
 
 const port = Number(process.env.PORT) || 3000;
-server.listen(port, () => console.info(`Essencial Stay backend listening on ${port}`));
+server.listen(port, "0.0.0.0", () => console.info(`Essencial Stay backend listening on ${port}`));
