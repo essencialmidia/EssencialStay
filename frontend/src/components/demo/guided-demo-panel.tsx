@@ -13,7 +13,7 @@ function resolveGuideStep(reservation: ManualAirbnbReservation): GuideStep {
   if (timeline.includes("QR Code criado") || timeline.includes("QR criado")) return { step: 6, title: "QR Code criado", text: "O QR Code demonstrativo já está disponível no Portal." };
   if (timeline.includes("Portal atualizado") || timeline.includes("Portal preparado")) return { step: 5, title: "Portal preparado", text: "O Portal do Hóspede foi preparado para a chegada." };
   if (reservation.accessPrepared) return { step: 4, title: reservation.lockMode === "automatic-demo" ? "Acesso Ekaza preparado" : "PIN Yale confirmado", text: "A chave digital está pronta para a hospedagem." };
-  if (reservation.fnrhCompleted) return { step: 3, title: "FNRH concluída", text: "A chegada do hóspede foi registrada na jornada." };
+  if (reservation.fnrhCompleted) return { step: 4, title: reservation.lockMode === "automatic-demo" ? "Gerando acesso Ekaza" : "Confirmar PIN temporário", text: "A FNRH foi recebida e compartilhada. A preparação do acesso já pode continuar." };
   if (reservation.preCheckinCompleted) return { step: 2, title: "Pré-check-in concluído", text: "A preparação da chegada está em andamento." };
   return { step: 1, title: "Reserva recebida", text: "Abra a preparação para iniciar a jornada do hóspede." };
 }
