@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.*
+!.env.example
+test
+adapters
+controllers
+middlewares
+models
+routes
+services
+utils
+Dockerfile*
+npm-debug.log*
