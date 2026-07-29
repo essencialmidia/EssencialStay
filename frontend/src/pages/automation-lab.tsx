@@ -33,6 +33,7 @@ import {
   type LabScenario,
   type ProviderDiagnostic,
 } from "../automation-lab/automation-lab";
+import { EkazaScenarioPanel } from "../components/automation-lab/ekaza-scenario-panel";
 import { PageHeader } from "../components/layout/page-header";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -96,7 +97,7 @@ function sessionStorageSafe() {
 export function AutomationLabPage() {
   const storage = sessionStorageSafe();
   const [section, setSection] = useState<Section>("dashboard");
-  const [selectedScenarioId, setSelectedScenarioId] = useState("scenario-01");
+  const [selectedScenarioId, setSelectedScenarioId] = useState("scenario-01-casa-mairipora");
   const [sessions, setSessions] = useState<AutomationSession[]>(() => storage ? loadAutomationSessions(storage) : []);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(() => sessions.find((item) => item.status === "active")?.id ?? null);
   const [logs, setLogs] = useState<LabLog[]>([]);
@@ -141,6 +142,13 @@ export function AutomationLabPage() {
   function finishSession() {
     if (!activeSession) return;
     const ended = endAutomationSession(activeSession);
+    if (ended.scenarioId === "scenario-01-casa-mairipora") {
+      if (storage) clearAutomationSessions(storage);
+      setSessions([]);
+      setSelectedSessionId(null);
+      setLogs([]);
+      return;
+    }
     persist(sessions.map((item) => item.id === ended.id ? ended : item));
     addLog("session.ended", { sessionId: activeSession.id }, "success");
     setSelectedSessionId(null);
@@ -206,6 +214,12 @@ export function AutomationLabPage() {
       {section === "logs" && <Logs logs={logs} />}
       {section === "diagnostics" && <Diagnostics diagnostics={diagnostics} scenario={selectedScenario} onRun={() => void runDiagnostic()} />}
       {section === "reports" && <Reports scenario={selectedScenario} diagnostics={diagnostics} onGenerate={() => { setReportOpen(true); addLog("report.generated", { scenarioId: selectedScenario.id }, "success"); }} />}
+
+      {selectedScenario.id === "scenario-01-casa-mairipora" && ["scenarios", "sessions", "devices", "diagnostics"].includes(section) && <EkazaScenarioPanel
+        session={activeSession?.scenarioId === selectedScenario.id ? activeSession : null}
+        onSessionChange={(next) => persist(sessions.map((item) => item.id === next.id ? next : item))}
+        onLog={addLog}
+      />}
 
       {activeSession && selectedDevice && (
         <Card>

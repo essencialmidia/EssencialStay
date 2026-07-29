@@ -41,6 +41,10 @@ export type AutomationSession = {
   startedAt: string;
   endsAt: string;
   endedAt?: string;
+  fictionalGuestName?: string;
+  technicalNotes?: string;
+  portalEnabled?: boolean;
+  simulatedMessageEnabled?: boolean;
   devices: Array<{ id: string; enabled: boolean; mode: DeviceMode }>;
 };
 
@@ -81,28 +85,8 @@ export interface AutomationLabProvider {
   getDiagnostic(): Promise<ProviderDiagnostic>;
 }
 
-const device = (
-  id: string,
-  name: string,
-  type: string,
-  model: string,
-  capabilities: string[],
-  allowedCommands: string[],
-): LabDevice => ({
-  id,
-  name,
-  type,
-  model,
-  firmware: "lab-1.0",
-  capabilities,
-  allowedCommands,
-  state: "online",
-  mode: "simulated",
-  allowlisted: true,
-});
-
 const casaMairiporaScenario: LabScenario = {
-    id: "scenario-01",
+    id: "scenario-01-casa-mairipora",
     name: "Casa Mairiporã",
     description: "Cenário residencial e Airbnb para homologação controlada do ecossistema Ekaza.",
     category: "Residencial / Airbnb",
@@ -113,15 +97,10 @@ const casaMairiporaScenario: LabScenario = {
     lastValidation: "2026-07-29",
     environment: "laboratory",
     certification: "in_validation",
-    devices: [
-      device("ekaza-lock-01", "Fechadura principal", "Fechadura", "EKAZA Smart Lock", ["lock", "unlock", "temporary_access"], ["lock", "unlock"]),
-      device("ekaza-switch-01", "Interruptor sala", "Interruptor", "EKAZA Switch", ["power"], ["turn_on", "turn_off"]),
-      device("ekaza-outlet-01", "Tomada bancada", "Tomada", "EKAZA Plug", ["power", "energy_meter"], ["turn_on", "turn_off"]),
-      device("ekaza-sensor-01", "Sensor de abertura", "Sensor", "EKAZA Contact", ["contact_state"], []),
-    ],
-    capabilities: ["lock", "temporary_access", "power", "energy_meter", "contact_state", "guest_portal"],
-    limitations: ["Comandos reais permanecem desabilitados por padrão.", "Mensagens e Portal do Hóspede usam dados sintéticos."],
-    notes: "Estrutura de testes Casa Mairiporã migrada para o Scenario 01.",
+    devices: [],
+    capabilities: ["device_inventory", "status", "capabilities", "diagnostics", "guest_portal_temporary"],
+    limitations: ["Dispositivos são carregados somente da allowlist Ekaza.", "Comandos reais, PIN temporário e revogação ainda não possuem suporte comprovado."],
+    notes: "Estrutura de testes Casa Mairiporã conectada ao provider Ekaza via API de diagnóstico.",
     portalAvailable: true,
 };
 
@@ -255,12 +234,20 @@ export function createAutomationSession(scenario: LabScenario, now = new Date())
     status: "active",
     startedAt: now.toISOString(),
     endsAt: endsAt.toISOString(),
+    fictionalGuestName: "Hóspede de teste",
+    technicalNotes: "",
+    portalEnabled: false,
+    simulatedMessageEnabled: false,
     devices: scenario.devices.map((item) => ({ id: item.id, enabled: true, mode: item.mode === "real" ? "simulated" : item.mode })),
   };
 }
 
 export function endAutomationSession(session: AutomationSession, now = new Date()): AutomationSession {
   return { ...session, status: "ended", endedAt: now.toISOString(), devices: session.devices.map((item) => ({ ...item, enabled: false, mode: "disabled" })) };
+}
+
+export function isAutomationSessionExpired(session: AutomationSession, now = new Date()) {
+  return session.status !== "active" || new Date(session.endsAt).getTime() <= now.getTime();
 }
 
 export function clearAutomationSessions(storage: Pick<Storage, "removeItem">) {
