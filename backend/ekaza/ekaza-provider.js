@@ -2,6 +2,27 @@ import { isTuyaConfigured } from "./config.js";
 import { sanitizedErrorCode, TuyaError } from "./tuya-errors.js";
 import { mapTuyaDevice } from "./tuya-device-mapper.js";
 
+const statusLabels = { battery_percentage: "Bateria", residual_electricity: "Bateria", unlock_method: "Método de abertura", closed_opened: "Estado da porta", lock_motor_state: "Estado da fechadura", hijack: "Alerta de coação", alarm_lock: "Alarme", doorbell: "Campainha" };
+const readEnabled = (config) => config.mode === "real" && config.realEnabled && config.deviceReadEnabled;
+const available = (value) => value !== undefined && value !== null && value !== "";
+
+function readError(config, providerDeviceId) {
+  if (!readEnabled(config)) throw new TuyaError("device_read_disabled", "A leitura de dispositivos Ekaza está desabilitada.");
+  if (!config.allowedDeviceIds.has(providerDeviceId)) throw new TuyaError("device_not_allowed", "O dispositivo não está autorizado para leitura.");
+}
+
+function sanitizeDevice(raw) {
+  const mapped = mapTuyaDevice(raw);
+  const result = { id: raw.id, name: raw.name || raw.custom_name, type: mapped.type, category: raw.category, productName: raw.product_name ?? raw.productName, productId: raw.product_id ?? raw.productId, model: raw.model, online: Boolean(raw.online ?? raw.isOnline ?? raw.is_online), subDevice: raw.sub };
+  const optional = { gatewayId: raw.gateway_id ?? raw.gatewayId ?? raw.parent_id ?? raw.parentId, timeZone: raw.time_zone ?? raw.timeZone, createTime: raw.create_time ?? raw.createTime, updateTime: raw.update_time ?? raw.updateTime, activeTime: raw.active_time ?? raw.activeTime };
+  for (const [key, value] of Object.entries(optional)) if (available(value)) result[key] = value;
+  return Object.fromEntries(Object.entries(result).filter(([, value]) => available(value)));
+}
+
+function normalizeSpecification(items, writable, readable) {
+  return (Array.isArray(items) ? items : []).map((item) => ({ code: item.code, type: item.type, values: item.values, description: item.desc ?? item.description ?? item.name, writable: item.writable ?? writable, readable: item.readable ?? readable })).filter((item) => item.code);
+}
+
 export class EkazaProvider {
   constructor(config, client) { this.config = config; this.client = client; }
 
@@ -15,7 +36,7 @@ export class EkazaProvider {
   }
 
   async listDevices(context = {}) {
-    if (this.config.mode !== "real" || !this.config.realEnabled || !this.config.deviceReadEnabled) throw new TuyaError("device_read_disabled", "A leitura de dispositivos Ekaza está desabilitada.");
+    if (!readEnabled(this.config)) throw new TuyaError("device_read_disabled", "A leitura de dispositivos Ekaza está desabilitada.");
     const pageSize = 20;
     const devices = [];
     let lastId = null;
@@ -33,9 +54,22 @@ export class EkazaProvider {
   }
 
   async getDeviceStatus(providerDeviceId) {
-    if (this.config.mode !== "real" || !this.config.realEnabled || !this.config.deviceReadEnabled) throw new TuyaError("device_read_disabled", "A leitura de dispositivos Ekaza está desabilitada.");
-    if (!this.config.allowedDeviceIds.has(providerDeviceId)) throw new TuyaError("device_not_allowed", "O dispositivo não está autorizado para leitura.");
+    readError(this.config, providerDeviceId);
+    const details = await this.getDeviceDetails(providerDeviceId);
     const response = await this.client.request("GET", `/v1.0/devices/${encodeURIComponent(providerDeviceId)}/status`);
-    return Array.isArray(response.result) ? response.result.map(({ code, value }) => ({ code, value })) : [];
+    const status = Array.isArray(response.result) ? response.result.map(({ code, value }) => ({ code, value, ...(statusLabels[code] ? { label: statusLabels[code] } : {}) })) : [];
+    return { deviceId: providerDeviceId, online: details.online, type: details.type, status, checkedAt: new Date().toISOString() };
+  }
+
+  async getDeviceDetails(providerDeviceId) {
+    readError(this.config, providerDeviceId);
+    const response = await this.client.request("GET", `/v2.0/cloud/thing/${encodeURIComponent(providerDeviceId)}`);
+    return sanitizeDevice(response.result || {});
+  }
+
+  async getDeviceSpecifications(providerDeviceId) {
+    readError(this.config, providerDeviceId);
+    const response = await this.client.request("GET", `/v1.1/iot-03/devices/${encodeURIComponent(providerDeviceId)}/specification`);
+    return { deviceId: providerDeviceId, functions: normalizeSpecification(response.result?.functions, true, false), status: normalizeSpecification(response.result?.status, false, true) };
   }
 }

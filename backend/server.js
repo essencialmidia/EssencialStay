@@ -28,6 +28,10 @@ function isAdminAuthorized(request) {
   return Boolean(config.adminApiKey) && request.headers["x-ekaza-admin-key"] === config.adminApiKey;
 }
 
+function logReadFailure(providerDeviceId, error) {
+  console.error("[Ekaza read] request_failed", JSON.stringify({ method: "GET", path: error?.details?.endpoint ?? null, status: error?.details?.status ?? null, code: error?.details?.tuyaCode ?? sanitizedErrorCode(error), message: error?.details?.tuyaMessage ?? (error instanceof Error ? error.message : "unknown_error"), providerDeviceId }));
+}
+
 const server = createServer(async (request, response) => {
   const origin = request.headers.origin;
   if (origin && allowedOrigins.has(origin)) response.setHeader("access-control-allow-origin", origin);
@@ -42,14 +46,30 @@ const server = createServer(async (request, response) => {
       try {
         return sendJson(response, 200, { provider: "ekaza", devices: await provider.listDevices() });
       } catch (error) {
-        console.error("[Ekaza devices] request_failed", JSON.stringify({ endpoint: error?.details?.endpoint ?? null, status: error?.details?.status ?? null, code: error?.details?.tuyaCode ?? sanitizedErrorCode(error), message: error?.details?.tuyaMessage ?? (error instanceof Error ? error.message : "unknown_error") }));
+        logReadFailure(null, error);
         throw error;
       }
+    }
+    const detailMatch = /^\/api\/v1\/integrations\/ekaza\/devices\/([^/]+)$/.exec(request.url || "");
+    if (detailMatch) {
+      if (!isAdminAuthorized(request)) return sendJson(response, 401, { errorCode: "unauthorized" });
+      const providerDeviceId = decodeURIComponent(detailMatch[1]);
+      try { return sendJson(response, 200, await provider.getDeviceDetails(providerDeviceId)); }
+      catch (error) { logReadFailure(providerDeviceId, error); throw error; }
     }
     const statusMatch = /^\/api\/v1\/integrations\/ekaza\/devices\/([^/]+)\/status$/.exec(request.url || "");
     if (statusMatch) {
       if (!isAdminAuthorized(request)) return sendJson(response, 401, { errorCode: "unauthorized" });
-      return sendJson(response, 200, { provider: "ekaza", providerDeviceId: decodeURIComponent(statusMatch[1]), status: await provider.getDeviceStatus(decodeURIComponent(statusMatch[1])) });
+      const providerDeviceId = decodeURIComponent(statusMatch[1]);
+      try { return sendJson(response, 200, await provider.getDeviceStatus(providerDeviceId)); }
+      catch (error) { logReadFailure(providerDeviceId, error); throw error; }
+    }
+    const specificationsMatch = /^\/api\/v1\/integrations\/ekaza\/devices\/([^/]+)\/specifications$/.exec(request.url || "");
+    if (specificationsMatch) {
+      if (!isAdminAuthorized(request)) return sendJson(response, 401, { errorCode: "unauthorized" });
+      const providerDeviceId = decodeURIComponent(specificationsMatch[1]);
+      try { return sendJson(response, 200, await provider.getDeviceSpecifications(providerDeviceId)); }
+      catch (error) { logReadFailure(providerDeviceId, error); throw error; }
     }
     return sendJson(response, 404, { errorCode: "not_found" });
   } catch (error) { return sendJson(response, 503, { errorCode: sanitizedErrorCode(error) }); }
