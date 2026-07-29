@@ -18,6 +18,7 @@ import { AdminUnitFormPage } from "../pages/admin/unit-form";
 import { ConfiguracoesPage } from "../pages/configuracoes";
 import { DashboardPage } from "../pages/dashboard";
 import { AmbientesPage } from "../pages/ambientes";
+import { AutomationLabPage } from "../pages/automation-lab";
 import { DispositivosPage } from "../pages/dispositivos";
 import { DemoAdminPage } from "../pages/demo-admin";
 import { DemoGuestPortalPage } from "../pages/demo-guest-portal";
@@ -90,6 +91,7 @@ const routes = [
           { path: "dispositivos", element: <DispositivosPage /> },
           { path: "integracoes", element: <IntegracoesPage /> },
           { path: "automacao", element: <ModulePage title="Automação" description="Área futura para cenas e regras inteligentes." icon={Sparkles} /> },
+          { path: "automation-lab", element: <AutomationLabPage /> },
           { path: "relatorios", element: <ModulePage title="Relatórios" description="Espaço futuro para indicadores operacionais, financeiros e de experiência." icon={BarChart3} /> },
           { path: "financeiro", element: <ModulePage title="Financeiro" description="Estrutura visual para receitas, pagamentos, planos e faturamento." icon={CreditCard} /> },
           { path: "limpeza", element: <OperacoesPage tipo="limpeza" /> },

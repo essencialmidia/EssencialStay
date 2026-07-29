@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Beaker,
   BedDouble,
   CalendarDays,
   CreditCard,
@@ -39,6 +40,7 @@ export const navigationSections: Array<{ label: string; items: NavigationItem[] 
   {
     label: "IoT",
     items: [
+      { title: "Automation Lab", path: "/automation-lab", icon: Beaker, description: "Integração, homologação e testes controlados." },
       { title: "Dispositivos", path: "/dispositivos", icon: Cpu, description: "Inventário técnico por propriedade e ambiente." },
       { title: "Integrações", path: "/integracoes", icon: PlugZap, description: "Provedores e ambientes de integração." },
       { title: "Automação", path: "/automacao", icon: Sparkles, soon: true, description: "Cenas e regras inteligentes futuras." },
