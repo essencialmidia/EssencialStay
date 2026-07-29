@@ -10,7 +10,7 @@ type ModalProps = {
   description?: string;
   children: ReactNode;
   onClose: () => void;
-  size?: "default" | "large";
+  size?: "default" | "medium" | "large";
 };
 
 export function Modal({ open, title, description, children, onClose, size = "default" }: ModalProps) {
@@ -35,7 +35,7 @@ export function Modal({ open, title, description, children, onClose, size = "def
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={description ? descriptionId : undefined}>
       <button type="button" className="absolute inset-0 animate-fade-in bg-foreground/25 backdrop-blur-[2px] dark:bg-black/60" aria-label="Fechar modal" onClick={onClose} />
-      <div className={cn("relative max-h-[calc(100vh-2rem)] w-full animate-scale-in overflow-y-auto rounded-lg border bg-card shadow-floating", size === "large" ? "max-w-2xl" : "max-w-lg")}>
+      <div className={cn("relative max-h-[calc(100vh-2rem)] w-full animate-scale-in overflow-y-auto rounded-lg border bg-card shadow-floating", size === "large" ? "max-w-2xl" : size === "medium" ? "max-w-[540px]" : "max-w-lg")}>
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b bg-card/95 px-5 py-4 backdrop-blur sm:px-6">
           <div>
             <h2 id={titleId} className="text-base font-semibold">{title}</h2>
