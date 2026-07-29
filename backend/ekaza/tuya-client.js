@@ -39,15 +39,18 @@ export class TuyaClient {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
     try {
-      const response = await this.fetchImpl(`${this.config.baseUrl}${path}`, { method, headers, body: body === undefined ? undefined : bodyText, signal: controller.signal });
-      if (!response.ok) throw new TuyaError("provider_http_error", "A Tuya recusou a solicitação.");
+      const url = `${this.config.baseUrl}${path}`;
+      const response = await this.fetchImpl(url, { method, headers, body: body === undefined ? undefined : bodyText, signal: controller.signal });
+      const errorPayload = await response.clone().json().catch(() => null);
+      const details = { endpoint: path, status: response.status, tuyaCode: errorPayload?.code ?? null, tuyaMessage: errorPayload?.msg ?? errorPayload?.message ?? null };
+      if (!response.ok) throw new TuyaError("provider_http_error", "A Tuya recusou a solicitação.", undefined, details);
       const payload = await response.json();
-      if (!payload?.success) throw new TuyaError("provider_rejected", "A Tuya não concluiu a solicitação.");
+      if (!payload?.success) throw new TuyaError("provider_rejected", "A Tuya não concluiu a solicitação.", undefined, { ...details, tuyaCode: payload?.code ?? null, tuyaMessage: payload?.msg ?? payload?.message ?? null });
       return payload;
     } catch (error) {
       if (error instanceof TuyaError) throw error;
-      if (error?.name === "AbortError") throw new TuyaError("timeout", "A Tuya excedeu o tempo limite.");
-      throw new TuyaError("provider_unavailable", "Não foi possível contactar a Tuya.");
+      if (error?.name === "AbortError") throw new TuyaError("timeout", "A Tuya excedeu o tempo limite.", error, { endpoint: path, status: null, tuyaCode: null, tuyaMessage: error.message });
+      throw new TuyaError("provider_unavailable", "Não foi possível contactar a Tuya.", error, { endpoint: path, status: null, tuyaCode: null, tuyaMessage: error instanceof Error ? error.message : null });
     } finally { clearTimeout(timeout); }
   }
 }

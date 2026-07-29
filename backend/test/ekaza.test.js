@@ -27,6 +27,23 @@ test("mapeia dispositivo e não o habilita fora da allowlist", () => {
   assert.equal(device.guestControllable, false);
 });
 
+test("lista dispositivos do projeto em páginas sem exigir UID ou space ID", async () => {
+  const paths = [];
+  const firstPage = Array.from({ length: 20 }, (_, index) => ({ id: `device-${index + 1}`, name: `Dispositivo ${index + 1}`, category: "light", isOnline: true }));
+  const provider = new EkazaProvider({ ...config, uid: "", spaceId: "" }, {
+    request: async (_method, path) => {
+      paths.push(path);
+      return { result: path.includes("last_id=device-20") ? [{ id: "device-21", name: "Dispositivo 21", category: "light", isOnline: false }] : firstPage };
+    },
+  });
+  const devices = await provider.listDevices();
+  assert.deepEqual(paths, ["/v2.0/cloud/thing/device?page_size=20", "/v2.0/cloud/thing/device?page_size=20&last_id=device-20"]);
+  assert.equal(devices.length, 21);
+  assert.equal(devices[0].online, true);
+  assert.equal(devices[20].online, false);
+  assert.equal(devices[0].enabled, true);
+});
+
 test("modo real desligado não chama a Tuya no health check", async () => {
   const disabled = { ...config, realEnabled: false };
   const provider = new EkazaProvider(disabled, { getAccessToken: async () => { throw new Error("não deve chamar"); } });

@@ -39,7 +39,12 @@ const server = createServer(async (request, response) => {
     if (request.url === "/api/v1/integrations/ekaza/health") return sendJson(response, 200, await provider.health());
     if (request.url === "/api/v1/integrations/ekaza/devices") {
       if (!isAdminAuthorized(request)) return sendJson(response, 401, { errorCode: "unauthorized" });
-      return sendJson(response, 200, { provider: "ekaza", devices: await provider.listDevices() });
+      try {
+        return sendJson(response, 200, { provider: "ekaza", devices: await provider.listDevices() });
+      } catch (error) {
+        console.error("[Ekaza devices] request_failed", JSON.stringify({ endpoint: error?.details?.endpoint ?? null, status: error?.details?.status ?? null, code: error?.details?.tuyaCode ?? sanitizedErrorCode(error), message: error?.details?.tuyaMessage ?? (error instanceof Error ? error.message : "unknown_error") }));
+        throw error;
+      }
     }
     const statusMatch = /^\/api\/v1\/integrations\/ekaza\/devices\/([^/]+)\/status$/.exec(request.url || "");
     if (statusMatch) {

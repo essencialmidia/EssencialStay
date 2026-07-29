@@ -1,9 +1,10 @@
 export class TuyaError extends Error {
-  constructor(code, message, cause) {
+  constructor(code, message, cause, details) {
     super(message);
     this.name = "TuyaError";
     this.code = code;
     this.cause = cause;
+    this.details = details;
   }
 }
 

@@ -16,9 +16,19 @@ export class EkazaProvider {
 
   async listDevices(context = {}) {
     if (this.config.mode !== "real" || !this.config.realEnabled || !this.config.deviceReadEnabled) throw new TuyaError("device_read_disabled", "A leitura de dispositivos Ekaza está desabilitada.");
-    if (!this.config.uid) throw new TuyaError("device_context_missing", "A integração Ekaza não possui um contexto de dispositivos configurado.");
-    const response = await this.client.request("GET", `/v1.0/users/${this.config.uid}/devices`);
-    const devices = Array.isArray(response.result) ? response.result : [];
+    const pageSize = 20;
+    const devices = [];
+    let lastId = null;
+    do {
+      const query = new URLSearchParams({ page_size: String(pageSize) });
+      if (lastId) query.set("last_id", lastId);
+      const response = await this.client.request("GET", `/v2.0/cloud/thing/device?${query}`);
+      const page = Array.isArray(response.result) ? response.result : [];
+      devices.push(...page);
+      const nextLastId = page.at(-1)?.id;
+      if (page.length < pageSize || !nextLastId || nextLastId === lastId) break;
+      lastId = nextLastId;
+    } while (true);
     return devices.map((device) => mapTuyaDevice(device, { ...context, allowedDeviceIds: this.config.allowedDeviceIds }));
   }
 

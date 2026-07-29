@@ -8,7 +8,7 @@ export function mapTuyaDevice(device, { propertyId = null, unitId = null, allowe
     providerDeviceId: device.id,
     name: device.name || "Dispositivo Ekaza",
     type: typeByCategory[device.category] || "other",
-    online: Boolean(device.online),
+    online: Boolean(device.online ?? device.isOnline),
     capabilities,
     propertyId,
     unitId,
