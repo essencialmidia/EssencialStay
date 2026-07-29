@@ -5,6 +5,6 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "lint": "node --check server.js && node --check ekaza/config.js && node --check ekaza/ekaza-provider.js && node --check ekaza/tuya-auth.js && node --check ekaza/tuya-client.js && node --check ekaza/tuya-device-mapper.js && node --check ekaza/tuya-errors.js && node --check ekaza/tuya-lock-service.js"
+    "lint": "node --check server.js && node --check ekaza/config.js && node --check ekaza/ekaza-provider.js && node --check ekaza/tuya-auth.js && node --check ekaza/tuya-client.js && node --check ekaza/tuya-device-mapper.js && node --check ekaza/tuya-errors.js && node --check ekaza/tuya-lock-service.js && node --check automation/provider-contract.js && node --check automation/provider-registry.js && node --check akubela/akubela-config.js && node --check akubela/akubela-auth.js && node --check akubela/akubela-client.js && node --check akubela/akubela-provider.js && node --check akubela/akubela-device-mapper.js && node --check akubela/akubela-status-mapper.js && node --check akubela/akubela-capability-mapper.js && node --check akubela/akubela-errors.js"
   }
 }

@@ -11,6 +11,7 @@ import { AdminCompaniesPage } from "../pages/admin/companies";
 import { AdminCompanyDetailsPage } from "../pages/admin/company-details";
 import { AdminDashboardPage } from "../pages/admin/dashboard";
 import { AdminEkazaPage } from "../pages/admin/ekaza";
+import { AdminAkubelaPage } from "../pages/admin/akubela";
 import { AdminPropertyDetailsPage } from "../pages/admin/property-details";
 import { AdminPropertyFormPage } from "../pages/admin/property-form";
 import { AdminUnitFormPage } from "../pages/admin/unit-form";
@@ -66,6 +67,7 @@ const routes = [
           { path: "propriedades/:id/unidades/nova", element: <AdminUnitFormPage /> },
           { path: "configuracoes", element: <ModulePage title="Configurações da plataforma" description="Parâmetros globais serão adicionados em um próximo sprint." icon={Settings2} /> },
           { path: "ekaza", element: <AdminEkazaPage /> },
+          { path: "akubela", element: <AdminAkubelaPage /> },
           { path: "*", element: <NotFoundPage /> },
         ] }],
       },
