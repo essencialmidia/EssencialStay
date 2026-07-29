@@ -29,7 +29,7 @@ function isAdminAuthorized(request) {
 }
 
 function logReadFailure(providerDeviceId, error) {
-  console.error("[Ekaza read] request_failed", JSON.stringify({ method: "GET", path: error?.details?.endpoint ?? null, status: error?.details?.status ?? null, code: error?.details?.tuyaCode ?? sanitizedErrorCode(error), message: error?.details?.tuyaMessage ?? (error instanceof Error ? error.message : "unknown_error"), providerDeviceId }));
+  console.error("[Ekaza read] request_failed", JSON.stringify({ method: "GET", endpoint: error?.details?.endpoint ?? null, status: error?.details?.status ?? null, code: error?.details?.tuyaCode ?? sanitizedErrorCode(error), msg: error?.details?.tuyaMessage ?? (error instanceof Error ? error.message : "unknown_error"), deviceId: providerDeviceId }));
 }
 
 const server = createServer(async (request, response) => {
