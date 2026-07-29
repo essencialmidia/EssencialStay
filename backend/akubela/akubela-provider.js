@@ -1,5 +1,5 @@
 import { unsupported } from "../automation/provider-contract.js";
-import { isAkubelaConfigured } from "./akubela-config.js";
+import { getAkubelaConfigurationIssue, isAkubelaConfigured } from "./akubela-config.js";
 import { AkubelaError, akubelaErrorCode } from "./akubela-errors.js";
 import { mapAkubelaCapabilities } from "./akubela-capability-mapper.js";
 import { mapAkubelaDevice } from "./akubela-device-mapper.js";
@@ -15,6 +15,8 @@ function extractList(payload) {
 
 function ensureRead(config) {
   if (!config.enabled || !config.deviceReadEnabled) throw new AkubelaError("device_read_disabled", "A leitura Akubela está desabilitada.");
+  const issue = getAkubelaConfigurationIssue(config);
+  if (issue) throw new AkubelaError(issue.code, issue.message, { source: "essencial_stay" });
 }
 
 function ensureAllowed(config, providerDeviceId) {

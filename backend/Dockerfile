@@ -10,6 +10,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --chown=node:node server.js ./
 COPY --chown=node:node ekaza ./ekaza
+COPY --chown=node:node automation ./automation
+COPY --chown=node:node akubela ./akubela
 
 USER node
 

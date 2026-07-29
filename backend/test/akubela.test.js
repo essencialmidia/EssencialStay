@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadAkubelaConfig, isAkubelaConfigured } from "../akubela/akubela-config.js";
+import { readFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+import { getAkubelaConfigurationIssue, loadAkubelaConfig, isAkubelaConfigured, parseAkubelaAllowedDeviceIds } from "../akubela/akubela-config.js";
 import { AkubelaClient } from "../akubela/akubela-client.js";
 import { AkubelaProvider } from "../akubela/akubela-provider.js";
 import { mapAkubelaDevice } from "../akubela/akubela-device-mapper.js";
@@ -19,6 +23,38 @@ test("configuração centralizada mantém flags seguras e detecta campos ausente
   assert.equal(empty.commandsEnabled, false);
   assert.equal(isAkubelaConfigured(empty), false);
   assert.equal(isAkubelaConfigured(config), true);
+  assert.deepEqual(getAkubelaConfigurationIssue(empty), { code: "configuration_error", message: "A configuração Akubela necessária para esta operação está incompleta." });
+  assert.equal(getAkubelaConfigurationIssue(config), null);
+});
+
+test("lista permitida é sanitizada sem registrar valores confidenciais", () => {
+  const ids = parseAkubelaAllowedDeviceIds(" device-1,\n device-2\u0000, , device-1 ");
+  assert.deepEqual([...ids], ["device-1", "device-2"]);
+  const issue = getAkubelaConfigurationIssue(loadAkubelaConfig({ AKUBELA_CLIENT_SECRET: "private-secret", AKUBELA_PASSWORD: "private-password" }));
+  assert.doesNotMatch(JSON.stringify(issue), /private-secret|private-password/);
+});
+
+test("servidor inicia sem credenciais Akubela quando a integração está desabilitada", async () => {
+  const backendDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const child = spawn(process.execPath, ["server.js"], { cwd: backendDirectory, env: { ...process.env, PORT: "0", AKUBELA_ENABLED: "false", AKUBELA_DEVICE_READ_ENABLED: "false", AKUBELA_CLIENT_SECRET: "", AKUBELA_PASSWORD: "" }, stdio: ["ignore", "pipe", "pipe"] });
+  const output = await new Promise((resolveOutput, reject) => {
+    const timeout = setTimeout(() => reject(new Error("server_start_timeout")), 3_000);
+    child.stdout.once("data", (chunk) => { clearTimeout(timeout); resolveOutput(String(chunk)); });
+    child.once("error", reject);
+    child.once("exit", (code) => reject(new Error(`server_exited_${code}`)));
+  });
+  child.kill();
+  assert.match(output, /Essencial Stay backend listening/);
+});
+
+test("Dockerfile copia o diretório Akubela com a mesma capitalização do import Linux", () => {
+  const backendDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const dockerfile = readFileSync(resolve(backendDirectory, "Dockerfile"), "utf8");
+  const server = readFileSync(resolve(backendDirectory, "server.js"), "utf8");
+  assert.match(server, /"\.\/akubela\/akubela-config\.js"/);
+  assert.match(server, /message: "akubela_request_failed"/);
+  assert.match(dockerfile, /COPY --chown=node:node akubela \.\/akubela/);
+  assert.match(dockerfile, /COPY --chown=node:node automation \.\/automation/);
 });
 
 test("autentica por password grant manager, guarda token e não o devolve nas respostas do provider", async () => {

@@ -48,7 +48,7 @@ function logAkubelaFailure(operation, identifiers, error) {
     endpoint: details.endpoint ?? undefined,
     status: details.status ?? undefined,
     code: details.providerCode ?? akubelaErrorCode(error),
-    message: details.providerMessage ?? (error instanceof Error ? error.message : "unknown_error"),
+    message: "akubela_request_failed",
     ...identifiers,
   }));
 }
