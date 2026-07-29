@@ -1,7 +1,7 @@
 export type DemoLockProvider = "yale" | "ekaza";
 export type DemoLockMode = "assisted" | "automatic-demo";
 export type DemoAccessStatus = "awaiting_manual_pin" | "generating" | "active" | "generation_failed";
-export type DemoLockConfiguration = { id: string; provider: DemoLockProvider; mode: DemoLockMode; displayName: string; unitName: string };
+export type DemoLockConfiguration = { id: string; provider: DemoLockProvider; mode: DemoLockMode; displayName: string; unitName: string; requiresFNRH: boolean };
 export type DemoAccessRequest = { reservationId: string; unitId: string; guestName: string; validFrom: string; validUntil: string; simulateFailure?: boolean };
 type DemoAccessResultBase = { accessId: string; maskedCode: string; provider: "ekaza"; demonstration: true };
 export type DemoAccessResult =
@@ -9,9 +9,14 @@ export type DemoAccessResult =
   | (DemoAccessResultBase & { status: "failed" });
 
 export const demoLockConfigurations: Record<string, DemoLockConfiguration> = {
-  "studio-vila-nova": { id: "studio-vila-nova", provider: "yale", mode: "assisted", displayName: "Yale Hub Connect", unitName: "Studio Vila Nova" },
-  "apartamento-demo-zigbee": { id: "apartamento-demo-zigbee", provider: "ekaza", mode: "automatic-demo", displayName: "Fechadura Zigbee Ekaza", unitName: "Apartamento Demo Zigbee" },
+  "studio-vila-nova": { id: "studio-vila-nova", provider: "yale", mode: "assisted", displayName: "Yale Hub Connect", unitName: "Studio Vila Nova", requiresFNRH: false },
+  "apartamento-demo-zigbee": { id: "apartamento-demo-zigbee", provider: "ekaza", mode: "automatic-demo", displayName: "Fechadura Zigbee Ekaza", unitName: "Apartamento Demo Zigbee", requiresFNRH: true },
 };
+
+export function demoReservationRequiresFNRH(unitId?: string, configuredValue?: boolean) {
+  if (configuredValue !== undefined) return configuredValue;
+  return unitId ? demoLockConfigurations[unitId]?.requiresFNRH ?? true : true;
+}
 
 export const DemoAutomaticAccessProvider = {
   async createTemporaryAccess(request: DemoAccessRequest): Promise<DemoAccessResult> {

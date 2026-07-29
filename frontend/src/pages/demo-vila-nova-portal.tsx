@@ -26,7 +26,6 @@ export function DemoVilaNovaPortalPage() {
   const nights = reservation ? Math.max(1, Math.round((new Date(reservation.checkOut).getTime() - new Date(reservation.checkIn).getTime()) / 86400000)) : 2;
   const stayItems = [
     ["Pré-check-in", reservation?.preCheckinCompleted ? "Concluído" : "Pendente"],
-    ["FNRH", reservation?.fnrhCompleted ? "Concluída" : "Pendente"],
     ["Acesso temporário", accessCode ? "Disponível" : "Em preparação"],
     ["Wi-Fi", "Disponível"],
     ["Concierge", "Disponível"],
