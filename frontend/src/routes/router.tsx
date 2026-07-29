@@ -10,6 +10,7 @@ import { RegisterPage } from "../pages/auth/register";
 import { AdminCompaniesPage } from "../pages/admin/companies";
 import { AdminCompanyDetailsPage } from "../pages/admin/company-details";
 import { AdminDashboardPage } from "../pages/admin/dashboard";
+import { AdminEkazaPage } from "../pages/admin/ekaza";
 import { AdminPropertyDetailsPage } from "../pages/admin/property-details";
 import { AdminPropertyFormPage } from "../pages/admin/property-form";
 import { AdminUnitFormPage } from "../pages/admin/unit-form";
@@ -43,6 +44,7 @@ const routes = [
   { path: "/demo/29-07/portal", element: <DemoGuestPortalPage /> },
   { path: "/s/hotel-monaco-demo", element: <DemoGuestPortalPage /> },
   { path: "/s/vila-nova-demo", element: <DemoVilaNovaPortalPage /> },
+  { path: "/s/vila-nova/:slug", element: <DemoVilaNovaPortalPage /> },
   { path: "/demo/29-07/hospedagens", element: <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-[1440px]"><ReservasPage /></div></main> },
   { path: "/demo/29-07/*", element: <NotFoundPage /> },
   { element: <PublicRoute />, children: [{ path: "/login", element: <LoginPage /> }, { path: "/register", element: <RegisterPage /> }, { path: "/forgot-password", element: <ForgotPasswordPage /> }] },
@@ -63,6 +65,7 @@ const routes = [
           { path: "propriedades/:id", element: <AdminPropertyDetailsPage /> },
           { path: "propriedades/:id/unidades/nova", element: <AdminUnitFormPage /> },
           { path: "configuracoes", element: <ModulePage title="Configurações da plataforma" description="Parâmetros globais serão adicionados em um próximo sprint." icon={Settings2} /> },
+          { path: "ekaza", element: <AdminEkazaPage /> },
           { path: "*", element: <NotFoundPage /> },
         ] }],
       },
