@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { completeDemoHotelCleaning, completeDemoHotelJourney, createDemoHotelJourney, demoHotelJourneyStorageKey, goToDemoHotelStep, loadDemoHotelJourney, requestDemoHotelCleaning, saveDemoHotelJourney, startDemoHotelCleaning, startDemoHotelJourney } from "../src/demo/demo-hotel-guided-journey.ts";
+import { completeDemoHotelCleaning, completeDemoHotelJourney, createDemoHotelJourney, demoHotelJourneyStorageKey, getDemoHotelStartActionState, goToDemoHotelStep, loadDemoHotelJourney, requestDemoHotelCleaning, saveDemoHotelJourney, startDemoHotelCleaning, startDemoHotelJourney } from "../src/demo/demo-hotel-guided-journey.ts";
 import { isDemoHotelOrganization } from "../src/demo/demo-organizations.ts";
 
 test("a jornada do Demo Hotel começa com uma reserva PMS fictícia na Suíte 809", () => {
@@ -56,4 +56,12 @@ test("estado inválido na sessão não bloqueia a criação de uma nova demonstr
   const storage = { getItem: () => "{estado inválido", setItem: () => undefined };
   assert.equal(loadDemoHotelJourney(storage), null);
   assert.equal(startDemoHotelJourney(createDemoHotelJourney()).currentStep, 1);
+});
+
+test("a ação de início é habilitada na introdução e não recebe aria-disabled verdadeiro", () => {
+  const state = getDemoHotelStartActionState("not_started", false);
+  assert.equal(state.enabled, true);
+  assert.equal(state.disabled, false);
+  assert.equal(state.ariaDisabled, false);
+  assert.deepEqual(getDemoHotelStartActionState("not_started", true), { enabled: false, disabled: true, ariaDisabled: true });
 });

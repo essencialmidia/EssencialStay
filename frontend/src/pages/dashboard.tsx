@@ -16,6 +16,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { DemoHotelGuidedDemo } from "../components/demo/demo-hotel-guided-demo";
 import { EmptyState } from "../components/feedback/empty-state";
@@ -64,18 +65,18 @@ export function DashboardPage() {
   const [journey, setJourney] = useState<DemoHotelJourney>(() => loadDemoHotelJourney() ?? createDemoHotelJourney());
   const [demoOpen, setDemoOpen] = useState(false);
   const [restartOpen, setRestartOpen] = useState(false);
-  const [openIntroAfterRestart, setOpenIntroAfterRestart] = useState(false);
   useEffect(() => { if (!isDemoHotel) setDemoOpen(false); }, [isDemoHotel]);
-  useEffect(() => { if (openIntroAfterRestart) { setDemoOpen(true); setOpenIntroAfterRestart(false); } }, [openIntroAfterRestart]);
   const updateJourney = (next: DemoHotelJourney) => { saveDemoHotelJourney(next); setJourney(next); };
   const restartJourney = () => {
     clearDemoHotelJourney();
     const next = createDemoHotelJourney();
     saveDemoHotelJourney(next);
-    setDemoOpen(false);
-    setJourney(next);
-    setRestartOpen(false);
-    setOpenIntroAfterRestart(true);
+    flushSync(() => {
+      setDemoOpen(false);
+      setJourney(next);
+      setRestartOpen(false);
+    });
+    setDemoOpen(true);
   };
 
   const propriedadesAtivas = data.propriedades.filter((propriedade) => propriedade.status === "ativa").length;

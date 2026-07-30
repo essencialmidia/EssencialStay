@@ -37,6 +37,11 @@ export function isDemoHotelJourney(value: unknown): value is DemoHotelJourney {
   return journey.demoId === "hotel-summit-monaco-guest-journey" && (journey.status === "not_started" || journey.status === "in_progress" || journey.status === "completed") && typeof journey.currentStep === "number" && journey.currentStep >= 1 && journey.currentStep <= 7 && Boolean(journey.guest?.name) && Boolean(journey.reservation?.unit);
 }
 
+export function getDemoHotelStartActionState(status: DemoHotelJourneyStatus, starting: boolean) {
+  const enabled = status === "not_started" && !starting;
+  return { enabled, disabled: !enabled, ariaDisabled: !enabled };
+}
+
 export function startDemoHotelJourney(journey: DemoHotelJourney, startedAt = new Date().toISOString()): DemoHotelJourney { return { ...journey, status: "in_progress", startedAt, currentStep: 1 }; }
 export function goToDemoHotelStep(journey: DemoHotelJourney, step: number): DemoHotelJourney {
   const currentStep = Math.min(7, Math.max(1, step));
