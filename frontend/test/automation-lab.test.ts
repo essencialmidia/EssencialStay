@@ -13,7 +13,7 @@ import {
   sanitizeLabLog,
   saveAutomationSessions,
 } from "../src/automation-lab/automation-lab.ts";
-import { EkazaScenarioProvider, maskProviderDeviceId } from "../src/automation-lab/ekaza-scenario.ts";
+import { EkazaScenarioError, EkazaScenarioProvider, getEkazaSimpleError, maskProviderDeviceId } from "../src/automation-lab/ekaza-scenario.ts";
 import { createCommercialValidation, decideHomologation, friendlyCapability } from "../src/automation-lab/commercial-validation.ts";
 
 class MemoryStorage {
@@ -97,6 +97,32 @@ test("adapter exige chave administrativa e não expõe endpoints de comando", as
   assert.doesNotMatch(source, /\/commands|temporary_access|unlock|lock/);
 });
 
+test("fetch injetado é executado com o contexto global do navegador", async () => {
+  let receivedContext: unknown;
+  let requestedUrl = "";
+  function browserFetch(this: unknown, input: RequestInfo | URL, _init?: RequestInit) {
+    receivedContext = this;
+    requestedUrl = String(input);
+    return Promise.resolve(new Response(JSON.stringify({ configured: true, connected: true, provider: "ekaza", checkedAt: "2026-07-30T12:00:00.000Z" }), { status: 200 }));
+  }
+  const provider = new EkazaScenarioProvider("", browserFetch as typeof fetch, "https://api.example");
+  await provider.health();
+  assert.equal(receivedContext, globalThis);
+  assert.equal(requestedUrl, "https://api.example/api/v1/integrations/ekaza/health");
+});
+
+test("erros de API, autenticação, rede, CORS e timeout são sanitizados para o Modo Simples", async () => {
+  const unauthorized = new EkazaScenarioProvider("admin", async () => new Response("", { status: 401 }), "https://api.example");
+  await assert.rejects(() => unauthorized.listDevices(), (error: unknown) => error instanceof EkazaScenarioError && error.code === "unauthorized");
+  const network = new EkazaScenarioProvider("", async () => { throw new TypeError("Failed to fetch"); }, "https://api.example");
+  await assert.rejects(() => network.health(), (error: unknown) => error instanceof EkazaScenarioError && error.code === "network_or_cors");
+  const timeout = new EkazaScenarioProvider("", async () => { throw Object.assign(new Error("aborted"), { name: "AbortError" }); }, "https://api.example");
+  await assert.rejects(() => timeout.health(), (error: unknown) => error instanceof EkazaScenarioError && error.code === "timeout");
+  assert.equal(getEkazaSimpleError("unauthorized"), "A chave administrativa não foi aceita. Confirme a chave e tente novamente.");
+  assert.match(getEkazaSimpleError("network_or_cors"), /Não foi possível acessar o serviço/);
+  assert.doesNotMatch(getEkazaSimpleError("network_or_cors"), /Failed to fetch|stack|token/i);
+});
+
 test("logs removem PIN, token, senha, telefone e mensagem completa", () => {
   const log = sanitizeLabLog({
     pin: "1234",
@@ -153,12 +179,20 @@ test("fluxo simples usa health e allowlist reais, esconde IDs e traduz recursos"
 
 test("falhas são amigáveis e a chave é solicitada somente quando necessária", () => {
   const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
-  assert.match(simple, /Não foi possível conectar à Ekaza/);
+  assert.match(simple, /getEkazaSimpleError/);
   assert.match(simple, /Ver detalhes do erro/);
   assert.doesNotMatch(simple, /error\.stack|stack trace/i);
   assert.match(simple, /if \(!adminKey\) setKeyOpen\(true\)/);
   assert.match(simple, /Esta não é a senha da Ekaza nem o token da Tuya/);
   assert.doesNotMatch(simple, /createLabLog\([^)]*adminKey|console\.[a-z]+\([^)]*adminKey/);
+});
+
+test("Modo Simples deixa Casa Mairiporã independente do contexto global da empresa", () => {
+  const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
+  assert.match(simple, /AMBIENTE DO TESTE/);
+  assert.match(simple, /Casa Mairiporã/);
+  assert.match(simple, /O Automation Lab é um ambiente independente e não altera a empresa atualmente visualizada/);
+  assert.doesNotMatch(simple, /Hotel Summit Monaco/);
 });
 
 test("avaliação registra benefícios e indicações sem homologar automaticamente", () => {

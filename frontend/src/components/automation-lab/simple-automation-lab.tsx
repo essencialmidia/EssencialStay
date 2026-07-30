@@ -11,7 +11,7 @@ import {
   type CommercialValidation,
   type HomologationStatus,
 } from "../../automation-lab/commercial-validation";
-import { EkazaScenarioProvider, maskProviderDeviceId, type EkazaCapabilities, type EkazaDetails, type EkazaDevice, type EkazaHealth, type EkazaStatus } from "../../automation-lab/ekaza-scenario";
+import { EkazaScenarioError, EkazaScenarioProvider, getEkazaSimpleError, maskProviderDeviceId, type EkazaCapabilities, type EkazaDetails, type EkazaDevice, type EkazaHealth, type EkazaStatus } from "../../automation-lab/ekaza-scenario";
 import { AUTOMATION_LAB_SCENARIOS, clearAutomationSessions, createAutomationSession, isAutomationSessionExpired, loadAutomationSessions, saveAutomationSessions, type AutomationSession } from "../../automation-lab/automation-lab";
 import { PageHeader } from "../layout/page-header";
 import { Badge } from "../ui/badge";
@@ -33,6 +33,7 @@ const steps = ["Escolher o teste", "Encontrar equipamentos", "Conferir equipamen
 function storageSafe() { return typeof window === "undefined" ? null : window.sessionStorage; }
 function toggle(values: string[], value: string) { return values.includes(value) ? values.filter((item) => item !== value) : [...values, value]; }
 function functionLabel(device: EkazaDevice) { return typeLabels[device.type] ?? typeLabels.other; }
+function errorCode(error: unknown) { return error instanceof EkazaScenarioError ? error.code : "api_unavailable"; }
 
 export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
   const storage = storageSafe();
@@ -78,12 +79,14 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
       setHealth(result);
       if (result.connected) setStep(2);
       else {
-        setFriendlyError("Não foi possível conectar à Ekaza. Verifique se a integração está habilitada e tente novamente.");
-        setTechnicalError(result.sanitizedErrorCode ?? "provider_not_connected");
+        const code = result.sanitizedErrorCode ?? "api_unavailable";
+        setFriendlyError(getEkazaSimpleError(code));
+        setTechnicalError(code);
       }
     } catch (error) {
-      setFriendlyError("Não foi possível conectar à Ekaza. Tente novamente em alguns instantes.");
-      setTechnicalError(error instanceof Error ? error.message : "connection_failed");
+      const code = errorCode(error);
+      setFriendlyError(getEkazaSimpleError(code));
+      setTechnicalError(code);
     } finally {
       setLoading(null);
     }
@@ -108,8 +111,9 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
       }
       setStep(3);
     } catch (error) {
-      setFriendlyError(error instanceof Error && error.message === "unauthorized" ? "A chave administrativa não foi aceita. Confirme a chave e tente novamente." : "Não foi possível procurar os equipamentos autorizados.");
-      setTechnicalError(error instanceof Error ? error.message : "device_search_failed");
+      const code = errorCode(error);
+      setFriendlyError(getEkazaSimpleError(code));
+      setTechnicalError(code);
     } finally {
       setLoading(null);
     }
@@ -159,6 +163,12 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
     <div className="rounded-lg border border-info/20 bg-info/[0.05] px-4 py-3 text-sm">
       <p className="flex items-center gap-2 font-semibold"><ShieldCheck className="size-4 text-info" />AMBIENTE DE TESTE</p>
       <p className="mt-1 text-muted-foreground">Este teste não cria reservas e não afeta hóspedes, PMS, CRM, FNRH, faturamento ou relatórios operacionais.</p>
+    </div>
+
+    <div className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2">
+      <Info label="AMBIENTE DO TESTE" value="Casa Mairiporã" />
+      <Info label="INTEGRAÇÃO" value="Ekaza" />
+      <p className="sm:col-span-2 text-sm text-muted-foreground">O Automation Lab é um ambiente independente e não altera a empresa atualmente visualizada.</p>
     </div>
 
     {step === 0 ? <StartScreen onStart={startTest} /> : <>
