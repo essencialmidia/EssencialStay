@@ -1,5 +1,5 @@
 import { Check, ChevronLeft, ChevronRight, Hotel, Play, Presentation, Sparkles } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { completeDemoHotelCleaning, completeDemoHotelJourney, goToDemoHotelStep, requestDemoHotelCleaning, startDemoHotelCleaning, startDemoHotelJourney, type DemoHotelJourney } from "../../demo/demo-hotel-guided-journey";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -10,12 +10,16 @@ type Props = { open: boolean; journey: DemoHotelJourney; onClose: () => void; on
 
 export function DemoHotelGuidedDemo({ open, journey, onClose, onChange }: Props) {
   const [presentationMode, setPresentationMode] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState(false);
   const started = journey.status !== "not_started";
+  useEffect(() => { if (!open || !started) { setStarting(false); setStartError(false); } }, [open, started]);
   const move = (step: number) => onChange(goToDemoHotelStep(journey, step));
   const next = () => move(journey.currentStep + 1);
+  const start = () => { setStarting(true); setStartError(false); try { onChange(startDemoHotelJourney(journey)); } catch { setStartError(true); } finally { setStarting(false); } };
   const title = !started ? "Demonstração do Hotel Summit Monaco" : `Etapa ${journey.currentStep} de 7 · ${steps[journey.currentStep - 1]}`;
   return <Modal open={open} title={title} description={!started ? "Vamos simular toda a jornada de um hóspede no Essencial Stay." : "Ambiente demonstrativo — nenhuma integração, mensagem ou dispositivo real é acionado."} onClose={onClose} size="large">
-    {!started ? <Intro onStart={() => onChange(startDemoHotelJourney(journey))} onClose={onClose} /> : <div className={presentationMode ? "space-y-7 text-base" : "space-y-6"}>
+    {!started ? <Intro onStart={start} onClose={onClose} starting={starting} startError={startError} /> : <div className={presentationMode ? "space-y-7 text-base" : "space-y-6"}>
       <div className="flex flex-wrap items-center gap-2"><Badge variant="highlight">AMBIENTE DEMONSTRATIVO</Badge><Button size="sm" variant="ghost" className="ml-auto" onClick={() => setPresentationMode((value) => !value)}><Presentation className="size-4" />{presentationMode ? "Modo padrão" : "Modo apresentação"}</Button></div>
       <ol className="grid grid-cols-7 gap-1" aria-label="Etapas da demonstração">{steps.map((label, index) => <li key={label} className="min-w-0"><span className={`block h-1.5 rounded-full ${index + 1 <= journey.currentStep ? "bg-accent" : "bg-secondary"}`} /><span className="mt-1 hidden text-[10px] text-muted-foreground md:block">{index + 1}. {label}</span></li>)}</ol>
       <StepContent journey={journey} onChange={onChange} onNext={next} />
@@ -24,7 +28,7 @@ export function DemoHotelGuidedDemo({ open, journey, onClose, onChange }: Props)
   </Modal>;
 }
 
-function Intro({ onStart, onClose }: { onStart: () => void; onClose: () => void }) { return <div className="space-y-6"><div className="rounded-lg border border-accent/20 bg-accent/[0.07] p-5"><Hotel className="size-7 text-accent" /><p className="mt-3 text-sm leading-6">Apresente a jornada completa do hóspede, desde a reserva recebida pelo PMS até o relacionamento pós-hospedagem.</p></div><ol className="grid gap-2 text-sm sm:grid-cols-2">{["Reserva recebida pelo PMS", "Preparação automática da hospedagem", "Check-in e experiência do hóspede", "Serviços durante a estadia", "Checkout e limpeza", "CRM e relacionamento"].map((item, index) => <li key={item} className="flex gap-2"><span className="font-semibold text-accent">{index + 1}.</span>{item}</li>)}</ol><p className="text-xs text-muted-foreground">Todos os dados desta jornada são fictícios e não acionam serviços externos.</p><div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>Cancelar</Button><Button variant="accent" onClick={onStart}><Play className="size-4" />Começar demonstração</Button></div></div>; }
+function Intro({ onStart, onClose, starting, startError }: { onStart: () => void; onClose: () => void; starting: boolean; startError: boolean }) { return <div className="space-y-6"><div className="rounded-lg border border-accent/20 bg-accent/[0.07] p-5"><Hotel className="size-7 text-accent" /><p className="mt-3 text-sm leading-6">Apresente a jornada completa do hóspede, desde a reserva recebida pelo PMS até o relacionamento pós-hospedagem.</p></div><ol className="grid gap-2 text-sm sm:grid-cols-2">{["Reserva recebida pelo PMS", "Preparação automática da hospedagem", "Check-in e experiência do hóspede", "Serviços durante a estadia", "Checkout e limpeza", "CRM e relacionamento"].map((item, index) => <li key={item} className="flex gap-2"><span className="font-semibold text-accent">{index + 1}.</span>{item}</li>)}</ol><p className="text-xs text-muted-foreground">Todos os dados desta jornada são fictícios e não acionam serviços externos.</p>{startError && <p className="rounded-md border border-destructive/25 bg-destructive/[0.07] p-3 text-sm text-destructive">Não foi possível preparar a demonstração. Tente novamente.</p>}<div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button><Button type="button" variant="accent" disabled={starting} onClick={onStart}><Play className="size-4" />{starting ? "Preparando demonstração..." : startError ? "Tentar novamente" : "Começar demonstração"}</Button></div></div>; }
 
 function StepContent({ journey, onChange, onNext }: { journey: DemoHotelJourney; onChange: (journey: DemoHotelJourney) => void; onNext: () => void }) {
   const reservation = journey.reservation;

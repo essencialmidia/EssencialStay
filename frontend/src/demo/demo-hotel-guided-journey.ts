@@ -31,6 +31,12 @@ export function createDemoHotelJourney(now = new Date()): DemoHotelJourney {
   };
 }
 
+export function isDemoHotelJourney(value: unknown): value is DemoHotelJourney {
+  if (!value || typeof value !== "object") return false;
+  const journey = value as Partial<DemoHotelJourney>;
+  return journey.demoId === "hotel-summit-monaco-guest-journey" && (journey.status === "not_started" || journey.status === "in_progress" || journey.status === "completed") && typeof journey.currentStep === "number" && journey.currentStep >= 1 && journey.currentStep <= 7 && Boolean(journey.guest?.name) && Boolean(journey.reservation?.unit);
+}
+
 export function startDemoHotelJourney(journey: DemoHotelJourney, startedAt = new Date().toISOString()): DemoHotelJourney { return { ...journey, status: "in_progress", startedAt, currentStep: 1 }; }
 export function goToDemoHotelStep(journey: DemoHotelJourney, step: number): DemoHotelJourney {
   const currentStep = Math.min(7, Math.max(1, step));
@@ -46,7 +52,7 @@ export function completeDemoHotelCleaning(journey: DemoHotelJourney): DemoHotelJ
 export function completeDemoHotelJourney(journey: DemoHotelJourney): DemoHotelJourney { return { ...journey, status: "completed", currentStep: 7, crmUpdated: true }; }
 
 export function loadDemoHotelJourney(storage: Pick<Storage, "getItem"> | undefined = typeof sessionStorage === "undefined" ? undefined : sessionStorage): DemoHotelJourney | null {
-  try { const value = storage?.getItem(demoHotelJourneyStorageKey); return value ? JSON.parse(value) as DemoHotelJourney : null; } catch { return null; }
+  try { const value = storage?.getItem(demoHotelJourneyStorageKey); const journey = value ? JSON.parse(value) as unknown : null; return isDemoHotelJourney(journey) ? journey : null; } catch { return null; }
 }
 export function saveDemoHotelJourney(journey: DemoHotelJourney, storage: Pick<Storage, "setItem"> | undefined = typeof sessionStorage === "undefined" ? undefined : sessionStorage) { try { storage?.setItem(demoHotelJourneyStorageKey, JSON.stringify(journey)); } catch { /* estado demonstrativo é opcional */ } }
 export function clearDemoHotelJourney(storage: Pick<Storage, "removeItem"> | undefined = typeof sessionStorage === "undefined" ? undefined : sessionStorage) { try { storage?.removeItem(demoHotelJourneyStorageKey); } catch { /* estado demonstrativo é opcional */ } }
