@@ -14,6 +14,7 @@ import {
   saveAutomationSessions,
 } from "../src/automation-lab/automation-lab.ts";
 import { EkazaScenarioProvider, maskProviderDeviceId } from "../src/automation-lab/ekaza-scenario.ts";
+import { createCommercialValidation, decideHomologation, friendlyCapability } from "../src/automation-lab/commercial-validation.ts";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -57,7 +58,7 @@ test("encerrar sessão desabilita todos os dispositivos", () => {
 test("sessão expirada bloqueia ações do cenário", () => {
   const session = createAutomationSession(AUTOMATION_LAB_SCENARIOS[0], new Date("2026-07-29T12:00:00Z"));
   assert.equal(isAutomationSessionExpired(session, new Date("2026-07-29T12:59:00Z")), false);
-  assert.equal(isAutomationSessionExpired(session, new Date("2026-07-29T13:00:00Z")), true);
+  assert.equal(isAutomationSessionExpired(session, new Date("2026-07-29T14:00:00Z")), true);
 });
 
 test("providers mantêm contratos e catálogos independentes", () => {
@@ -112,10 +113,66 @@ test("logs removem PIN, token, senha, telefone e mensagem completa", () => {
 test("Automation Lab não importa reservas, PMS, CRM ou integrações operacionais", () => {
   const domain = readFileSync(new URL("../src/automation-lab/automation-lab.ts", import.meta.url), "utf8");
   const page = readFileSync(new URL("../src/pages/automation-lab.tsx", import.meta.url), "utf8");
-  assert.doesNotMatch(domain + page, /manual-airbnb-reservations|reservas\.repository|stays-demo|guest-crm|conexoes-integracao\.service/i);
-  assert.match(page, /Não cria reserva/);
-  assert.match(page, /Não envia PMS/);
-  assert.match(page, /EkazaScenarioPanel/);
+  const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(domain + page + simple, /manual-airbnb-reservations|reservas\.repository|stays-demo|guest-crm|conexoes-integracao\.service/i);
+  assert.match(simple, /não cria reservas/i);
+  assert.match(simple, /PMS, CRM, FNRH, faturamento/);
+  assert.match(page, /SimpleAutomationLab/);
+});
+
+test("/automation-lab abre no Modo Simples e mantém o Modo Técnico acessível", () => {
+  const route = readFileSync(new URL("../src/routes/router.tsx", import.meta.url), "utf8");
+  const page = readFileSync(new URL("../src/pages/automation-lab.tsx", import.meta.url), "utf8");
+  assert.match(route, /path: "automation-lab", element: <AutomationLabPage \/>/);
+  assert.match(page, /technicalMode[\s\S]*AutomationLabTechnicalMode[\s\S]*SimpleAutomationLab/);
+  assert.match(page, /useState\(false\)/);
+});
+
+test("Modo Simples inicia a sessão automaticamente por duas horas sem formulário técnico", () => {
+  const session = createAutomationSession(AUTOMATION_LAB_SCENARIOS[0], new Date("2026-07-29T12:00:00Z"));
+  assert.equal(session.startedAt, "2026-07-29T12:00:00.000Z");
+  assert.equal(session.endsAt, "2026-07-29T14:00:00.000Z");
+  assert.match(session.fictionalGuestName ?? "", /Teste Casa Mairiporã/);
+  const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
+  assert.match(simple, /Iniciar teste/);
+  assert.match(simple, /createAutomationSession\(scenario\)/);
+  assert.doesNotMatch(simple, /type="datetime-local"/);
+});
+
+test("fluxo simples usa health e allowlist reais, esconde IDs e traduz recursos", () => {
+  const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
+  assert.match(simple, /provider\.health\(\)/);
+  assert.match(simple, /provider\.listDevices\(\)/);
+  assert.doesNotMatch(simple, />\{device\.providerDeviceId\}</);
+  assert.match(simple, /maskProviderDeviceId/);
+  assert.equal(friendlyCapability("on_off"), "Liga e desliga");
+  assert.equal(friendlyCapability("battery"), "Mostra a bateria");
+  assert.equal(friendlyCapability("temporary_access"), "Cria acesso temporário");
+  assert.equal(friendlyCapability("unknown_code"), "Recurso identificado");
+});
+
+test("falhas são amigáveis e a chave é solicitada somente quando necessária", () => {
+  const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
+  assert.match(simple, /Não foi possível conectar à Ekaza/);
+  assert.match(simple, /Ver detalhes do erro/);
+  assert.doesNotMatch(simple, /error\.stack|stack trace/i);
+  assert.match(simple, /if \(!adminKey\) setKeyOpen\(true\)/);
+  assert.match(simple, /Esta não é a senha da Ekaza nem o token da Tuya/);
+  assert.doesNotMatch(simple, /createLabLog\([^)]*adminKey|console\.[a-z]+\([^)]*adminKey/);
+});
+
+test("avaliação registra benefícios e indicações sem homologar automaticamente", () => {
+  const validation = createCommercialValidation();
+  assert.equal(validation.status, "not_started");
+  assert.equal(decideHomologation(validation, "homologated", false).status, "not_started");
+  assert.equal(decideHomologation(validation, "homologated", true).portfolioAvailability, "yes");
+  assert.equal(decideHomologation(validation, "homologated_with_restrictions", true).portfolioAvailability, "restricted");
+  const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
+  assert.match(simple, /Os equipamentos que você esperava encontrar apareceram/);
+  assert.match(simple, /Quais benefícios foram comprovados/);
+  assert.match(simple, /Para quais tipos de hospedagem/);
+  assert.match(simple, /window\.confirm/);
+  assert.match(simple, /Modo técnico/);
 });
 
 test("Studio Vila Nova e Demo Hotel continuam usando seus fluxos existentes", () => {

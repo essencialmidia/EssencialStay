@@ -227,15 +227,15 @@ export function saveAutomationSessions(storage: Pick<Storage, "setItem">, sessio
 }
 
 export function createAutomationSession(scenario: LabScenario, now = new Date()): AutomationSession {
-  const endsAt = new Date(now.getTime() + 60 * 60 * 1000);
+  const endsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
   return {
     id: `lab-${now.getTime()}`,
     scenarioId: scenario.id,
     status: "active",
     startedAt: now.toISOString(),
     endsAt: endsAt.toISOString(),
-    fictionalGuestName: "Hóspede de teste",
-    technicalNotes: "",
+    fictionalGuestName: `Teste ${scenario.name}`,
+    technicalNotes: "Sessão automática do Modo Simples.",
     portalEnabled: false,
     simulatedMessageEnabled: false,
     devices: scenario.devices.map((item) => ({ id: item.id, enabled: true, mode: item.mode === "real" ? "simulated" : item.mode })),
