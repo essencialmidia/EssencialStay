@@ -9,7 +9,7 @@ export function Card({ className, variant = "default", ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-lg border text-card-foreground transition duration-product ease-product",
+        "min-w-0 rounded-lg border text-card-foreground transition duration-product ease-product",
         variant === "default" && "bg-card shadow-xs",
         variant === "subtle" && "border-transparent bg-surface",
         variant === "interactive" && "bg-card shadow-xs hover:-translate-y-0.5 hover:border-input hover:shadow-medium",
@@ -21,7 +21,7 @@ export function Card({ className, variant = "default", ...props }: CardProps) {
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("border-b px-5 py-4 sm:px-6", className)} {...props} />;
+  return <div className={cn("min-w-0 border-b px-5 py-4 sm:px-6", className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
@@ -33,5 +33,5 @@ export function CardDescription({ className, ...props }: HTMLAttributes<HTMLPara
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-5 sm:p-6", className)} {...props} />;
+  return <div className={cn("min-w-0 p-5 sm:p-6", className)} {...props} />;
 }

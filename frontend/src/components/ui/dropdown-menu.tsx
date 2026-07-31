@@ -11,6 +11,7 @@ export type DropdownItem = string | {
   icon?: ComponentType<{ className?: string }>;
   selected?: boolean;
   separatorBefore?: boolean;
+  disabled?: boolean;
 };
 
 type DropdownMenuProps = {
@@ -56,6 +57,7 @@ export function DropdownMenu({ trigger, items, align = "left", triggerClassName,
             const Icon = typeof item === "string" ? undefined : item.icon;
             const selected = typeof item === "string" ? false : item.selected;
             const separatorBefore = typeof item === "string" ? false : item.separatorBefore;
+            const disabled = typeof item === "string" ? false : item.disabled;
             const key = typeof item === "string" ? item : item.key ?? item.label;
             return (
               <Fragment key={key}>
@@ -63,11 +65,12 @@ export function DropdownMenu({ trigger, items, align = "left", triggerClassName,
                 <button
                   type="button"
                   role="menuitem"
+                  disabled={disabled}
                   onClick={() => {
                     onClick?.();
                     setOpen(false);
                   }}
-                  className={cn("flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", selected && "bg-secondary font-medium", destructive && "text-destructive hover:bg-destructive/[0.08]")}
+                  className={cn("flex min-h-10 w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50", selected && "bg-secondary font-medium", destructive && "text-destructive hover:bg-destructive/[0.08]")}
                 >
                   {Icon && <Icon className="size-4 shrink-0 text-muted-foreground" />}
                   <span className="min-w-0 flex-1 truncate">{label}</span>

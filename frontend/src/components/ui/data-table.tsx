@@ -16,7 +16,7 @@ type DataTableProps<T extends Record<string, ReactNode>> = {
 
 export function DataTable<T extends Record<string, ReactNode>>({ columns, rows, rowKey, className }: DataTableProps<T>) {
   return (
-    <div className={cn("scrollbar-subtle w-full overflow-x-auto rounded-lg border bg-card", className)}>
+    <div className={cn("scrollbar-subtle min-w-0 max-w-full overflow-x-auto overscroll-x-contain rounded-lg border bg-card", className)} tabIndex={0} role="region" aria-label="Tabela com rolagem horizontal">
       <table className="w-full min-w-[560px] border-collapse text-left text-sm">
         <thead className="bg-surface text-xs text-muted-foreground">
           <tr>

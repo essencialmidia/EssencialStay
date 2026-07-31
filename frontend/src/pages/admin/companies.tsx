@@ -1,4 +1,4 @@
-import { Building2, ExternalLink, Eye, Pencil, Plus, Power, RotateCcw } from "lucide-react";
+import { Building2, ExternalLink, Eye, MoreHorizontal, Pencil, Plus, Power, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { OrganizationForm } from "../../components/admin/organization-form";
@@ -9,6 +9,7 @@ import { PageHeader } from "../../components/layout/page-header";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { DataTable } from "../../components/ui/data-table";
+import { DropdownMenu } from "../../components/ui/dropdown-menu";
 import { Modal } from "../../components/ui/modal";
 import { Tooltip } from "../../components/ui/tooltip";
 import { useToast } from "../../components/ui/toast";
@@ -76,9 +77,29 @@ export function AdminCompaniesPage() {
     }
   }
 
-  return <div className="space-y-8">
-    <PageHeader title="Gerenciar empresas" description="Empresas clientes e seus contextos operacionais no Essencial Stay." actions={canManagePlatform ? <Button onClick={() => navigate("/onboarding?modo=nova-empresa")}><Plus className="size-4" />Nova empresa cliente</Button> : undefined} />
-    {data.organizacoes.length === 0 ? <EmptyState title="Nenhuma empresa cliente" description="Cadastre a primeira empresa para iniciar sua estrutura operacional." icon={Building2} /> : <DataTable
+  function actionsFor(organization: Organizacao) {
+    return [
+      { label: "Ver detalhes", icon: Eye, onClick: () => navigate(`/admin/empresas/${organization.id}`) },
+      { label: "Acessar painel da empresa", icon: ExternalLink, onClick: () => navigate(`/admin/empresas/${organization.id}/painel`) },
+      { label: "Editar empresa", icon: Pencil, onClick: () => setEditing(organization), separatorBefore: true },
+      { label: changingStatusId === organization.id ? "Atualizando status..." : organization.status === "ativo" ? "Inativar empresa" : "Reativar empresa", icon: organization.status === "ativo" ? Power : RotateCcw, onClick: () => void changeStatus(organization), disabled: changingStatusId === organization.id, destructive: organization.status === "ativo" },
+    ];
+  }
+
+  return <div className="min-w-0 space-y-8">
+    <PageHeader title="Empresas clientes" description="Consulte a estrutura e acesse o painel operacional de cada empresa." actions={canManagePlatform ? <Button onClick={() => navigate("/onboarding?modo=nova-empresa")}><Plus className="size-4" />Nova empresa cliente</Button> : undefined} />
+    {data.organizacoes.length === 0 ? <EmptyState title="Nenhuma empresa cliente" description="Cadastre a primeira empresa para iniciar sua estrutura operacional." icon={Building2} /> : <>
+      <div className="grid gap-3 md:hidden" aria-label="Empresas clientes">
+        {data.organizacoes.map((organization) => <article key={organization.id} className="min-w-0 rounded-lg border bg-card p-4 shadow-xs">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0"><h2 className="break-words text-sm font-semibold">{organization.nome_fantasia || organization.nome}</h2>{organization.nome_fantasia && organization.nome_fantasia !== organization.nome && <p className="mt-1 break-words text-xs text-muted-foreground">{organization.nome}</p>}</div>
+            <Badge variant={organization.status === "ativo" ? "success" : organization.status === "suspenso" ? "warning" : "muted"}>{statusLabels[organization.status]}</Badge>
+          </div>
+          <dl className="mt-4 grid grid-cols-2 gap-3 border-t pt-4 text-sm"><div><dt className="text-xs text-muted-foreground">Propriedades</dt><dd className="mt-1 font-semibold tabular-nums">{propertyCounts[organization.id] ?? 0}</dd></div><div><dt className="text-xs text-muted-foreground">Unidades</dt><dd className="mt-1 font-semibold tabular-nums">{unitCounts[organization.id] ?? 0}</dd></div><div className="col-span-2 min-w-0"><dt className="text-xs text-muted-foreground">Documento</dt><dd className="mt-1 break-words">{formatDocument(organization.documento)}</dd></div></dl>
+          {canManagePlatform && <div className="mt-4 flex items-center gap-2"><Button className="min-w-0 flex-1" variant="outline" onClick={() => navigate(`/admin/empresas/${organization.id}`)}><Eye className="size-4" />Ver detalhes</Button><DropdownMenu align="right" triggerAriaLabel={`Mais ações para ${organization.nome}`} trigger={<span className="grid size-10 place-items-center"><MoreHorizontal className="size-5" /></span>} items={actionsFor(organization)} /></div>}
+        </article>)}
+      </div>
+      <DataTable className="hidden md:block"
       columns={[{ key: "nome", header: "Nome" }, { key: "fantasia", header: "Nome fantasia" }, { key: "documento", header: "Documento" }, { key: "tipo", header: "Tipo" }, { key: "propriedades", header: "Propriedades" }, { key: "unidades", header: "Unidades" }, { key: "status", header: "Status" }, { key: "acoes", header: "", className: "w-40 text-right" }]}
       rows={data.organizacoes.map((organization) => ({
         nome: <span className="font-medium">{organization.nome}</span>,
@@ -88,15 +109,10 @@ export function AdminCompaniesPage() {
         propriedades: <span className="tabular-nums">{propertyCounts[organization.id] ?? 0}</span>,
         unidades: <span className="tabular-nums">{unitCounts[organization.id] ?? 0}</span>,
         status: <Badge variant={organization.status === "ativo" ? "success" : organization.status === "suspenso" ? "warning" : "muted"}>{statusLabels[organization.status]}</Badge>,
-        acoes: canManagePlatform ? <div className="flex justify-end gap-1">
-          <Tooltip content="Ver detalhes"><Button size="icon" variant="ghost" onClick={() => navigate(`/admin/empresas/${organization.id}`)} aria-label={`Ver detalhes de ${organization.nome}`}><Eye className="size-4" /></Button></Tooltip>
-          <Tooltip content="Acessar painel da empresa"><Button size="icon" variant="ghost" onClick={() => navigate(`/admin/empresas/${organization.id}/painel`)} aria-label={`Acessar painel da empresa ${organization.nome}`}><ExternalLink className="size-4" /></Button></Tooltip>
-          <Tooltip content="Editar"><Button size="icon" variant="ghost" onClick={() => setEditing(organization)} aria-label={`Editar ${organization.nome}`}><Pencil className="size-4" /></Button></Tooltip>
-          <Tooltip content={organization.status === "ativo" ? "Inativar" : "Reativar"}><Button size="icon" variant="ghost" disabled={changingStatusId === organization.id} onClick={() => void changeStatus(organization)} aria-label={`${organization.status === "ativo" ? "Inativar" : "Reativar"} ${organization.nome}`}>{organization.status === "ativo" ? <Power className="size-4" /> : <RotateCcw className="size-4" />}</Button></Tooltip>
-        </div> : <span />,
+        acoes: canManagePlatform ? <div className="flex justify-end"><Tooltip content="Ações da empresa"><span><DropdownMenu align="right" triggerAriaLabel={`Ações para ${organization.nome}`} trigger={<span className="grid size-10 place-items-center"><MoreHorizontal className="size-5" /></span>} items={actionsFor(organization)} /></span></Tooltip></div> : <span />,
       }))}
-    />}
-    <Modal open={Boolean(editing)} size="large" title="Editar empresa cliente" description="Atualize os dados cadastrais sem alterar o isolamento do tenant." onClose={() => setEditing(null)}>
+    /></>}
+    <Modal open={Boolean(editing)} size="large" title="Editar empresa cliente" description="Atualize os dados cadastrais sem alterar o acesso da empresa." onClose={() => setEditing(null)}>
       <OrganizationForm value={editing} onSubmit={save} submitting={submitting} onCancel={() => setEditing(null)} />
     </Modal>
   </div>;

@@ -41,7 +41,7 @@ export function Topbar({ title, sidebarCollapsed, onMenuClick, onCollapseClick }
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur-xl">
-      {organizacaoAdministrativa && <div className="flex min-h-10 items-center justify-between gap-3 border-b border-accent/20 bg-accent/10 px-4 py-2 text-sm sm:px-6 lg:px-8"><span className="min-w-0 truncate"><span className="mr-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Administrador global</span><span className="font-medium">Visualizando: {organizacaoAdministrativa.nome_fantasia || organizacaoAdministrativa.nome}</span></span><Button size="sm" variant="outline" onClick={() => { limparOrganizacaoAdministrativa(); navigate("/admin"); }}>Sair deste contexto</Button></div>}
+      {organizacaoAdministrativa && <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 border-b border-accent/25 bg-accent/10 px-4 py-2 text-sm sm:px-6 lg:px-8"><span className="min-w-0"><span className="mr-2 text-xs font-semibold uppercase tracking-wide text-accent">Empresa selecionada</span><span className="break-words font-medium">{organizacaoAdministrativa.nome_fantasia || organizacaoAdministrativa.nome}</span><span className="ml-2 hidden text-xs text-muted-foreground sm:inline">· acesso como administrador global</span></span><Button size="sm" variant="outline" onClick={() => { limparOrganizacaoAdministrativa(); navigate("/admin"); }}>Voltar à administração</Button></div>}
       <div className="flex h-[72px] items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
         <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick} aria-label="Abrir navegação">
           <Menu className="size-5" />

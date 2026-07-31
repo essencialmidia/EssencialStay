@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { DemoHotelGuidedDemo } from "../components/demo/demo-hotel-guided-demo";
 import { EmptyState } from "../components/feedback/empty-state";
 import { ErrorState } from "../components/feedback/error-state";
@@ -207,20 +208,20 @@ export function DashboardPage() {
           <section className="space-y-4">
             <SectionHeading title="Próximos movimentos" description="Atalhos para as áreas que organizam a experiência de hospedagem." />
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <Card variant="interactive" className="cursor-pointer" onClick={() => navigate("/experiencia-hospede")}>
+              <Link className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" to="/experiencia-hospede"><Card variant="interactive" className="h-full cursor-pointer">
                 <CardContent className="flex items-start gap-4 p-5">
                   <div className="grid size-10 shrink-0 place-items-center rounded-md bg-accent/[0.12] text-accent"><Sparkles className="size-5" /></div>
                   <div className="min-w-0"><p className="font-semibold">Experiência do hóspede</p><p className="mt-1 text-sm leading-5 text-muted-foreground">Visualize a jornada digital da chegada ao checkout.</p></div>
                   <ArrowRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
                 </CardContent>
-              </Card>
-              <Card variant="interactive" className="cursor-pointer" onClick={() => navigate("/propriedades")}>
+              </Card></Link>
+              <Link className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" to="/propriedades"><Card variant="interactive" className="h-full cursor-pointer">
                 <CardContent className="flex items-start gap-4 p-5">
                   <div className="grid size-10 shrink-0 place-items-center rounded-md bg-info/[0.12] text-info"><Building2 className="size-5" /></div>
                   <div className="min-w-0"><p className="font-semibold">Organizar propriedades</p><p className="mt-1 text-sm leading-5 text-muted-foreground">Revise os cadastros e a estrutura das unidades.</p></div>
                   <ArrowRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
                 </CardContent>
-              </Card>
+              </Card></Link>
               <Card>
                 <CardContent className="flex items-start gap-4 p-5">
                   <div className="grid size-10 shrink-0 place-items-center rounded-md bg-secondary text-muted-foreground"><CalendarDays className="size-5" /></div>

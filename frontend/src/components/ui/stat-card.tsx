@@ -28,7 +28,7 @@ const iconTone = {
 
 export function StatCard({ title, value, detail, icon: Icon, tone = "default", trend, valueClassName }: StatCardProps) {
   return (
-    <Card variant="interactive">
+    <Card>
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-4">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>

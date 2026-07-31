@@ -16,7 +16,7 @@ const variants: Record<BadgeVariant, string> = {
 export function Badge({ className, variant = "default", ...props }: HTMLAttributes<HTMLSpanElement> & { variant?: BadgeVariant }) {
   return (
     <span
-      className={cn("inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-md px-2 text-xs font-medium", variants[variant], className)}
+      className={cn("inline-flex h-6 min-w-0 max-w-full items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap rounded-md px-2 text-xs font-medium", variants[variant], className)}
       {...props}
     />
   );
