@@ -1,7 +1,7 @@
 export type EkazaHealth = { configured: boolean; connected: boolean; provider: string; checkedAt: string; latency?: number; sanitizedErrorCode?: string };
-export type EkazaDevice = { provider: string; providerDeviceId: string; name: string; type: string; online: boolean; capabilities: string[]; enabled: boolean };
-export type EkazaDetails = { id: string; name?: string; type: string; category?: string; productName?: string; model?: string; online: boolean };
-export type EkazaStatus = { deviceId: string; online: boolean; type: string; status: Array<{ code: string; value: unknown; label?: string }>; checkedAt: string };
+export type EkazaDevice = { provider: string; providerDeviceId: string; name: string; type: string; online: boolean | null; capabilities: string[]; enabled: boolean };
+export type EkazaDetails = { id: string; name?: string; type: string; category?: string; productName?: string; model?: string; online: boolean | null };
+export type EkazaStatus = { deviceId: string; online: boolean | null; type: string; status: Array<{ code: string; value: unknown; label?: string }>; checkedAt: string };
 export type EkazaCapabilities = { deviceId: string; functions: Array<{ code: string; writable?: boolean }>; status: Array<{ code: string; readable?: boolean }> };
 export type EkazaDiagnostic = { healthy: boolean; checkedAt: string; latencyMs: number; notes: string[] };
 

@@ -28,5 +28,6 @@ export function classifyTuyaDevice(device) {
 
 export function mapTuyaDevice(device, { propertyId = null, unitId = null, allowedDeviceIds = new Set() } = {}) {
   const capabilities = Array.isArray(device.functions) ? device.functions.map((item) => item.code).filter(Boolean) : [];
-  return { id: `ekaza:${device.id}`, provider: "ekaza", providerDeviceId: device.id, name: device.name || device.custom_name || "Dispositivo Ekaza", type: classifyTuyaDevice(device), online: Boolean(device.online ?? device.isOnline ?? device.is_online), capabilities, propertyId, unitId, guestControllable: false, enabled: allowedDeviceIds.size === 0 ? false : allowedDeviceIds.has(device.id) };
+  const connectivity = device.online ?? device.isOnline ?? device.is_online;
+  return { id: `ekaza:${device.id}`, provider: "ekaza", providerDeviceId: device.id, name: device.name || device.custom_name || "Dispositivo Ekaza", type: classifyTuyaDevice(device), online: connectivity === undefined || connectivity === null ? null : Boolean(connectivity), capabilities, propertyId, unitId, guestControllable: false, enabled: allowedDeviceIds.size === 0 ? false : allowedDeviceIds.has(device.id) };
 }

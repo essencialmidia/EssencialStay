@@ -177,6 +177,23 @@ test("fluxo simples usa health e allowlist reais, esconde IDs e traduz recursos"
   assert.equal(friendlyCapability("unknown_code"), "Recurso identificado");
 });
 
+test("Modo Simples inclui teste manual entre a conferência e a avaliação, sem comando real", () => {
+  const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
+  assert.match(simple, /"Conferir equipamentos", "Testar funcionamento", "Avaliar a utilidade"/);
+  assert.match(simple, /Status não confirmado/);
+  assert.match(simple, /Não foi possível confirmar se este equipamento está conectado/);
+  assert.match(simple, /Teste manual externo/);
+  assert.match(simple, /O comando foi realizado fora do Essencial Stay/);
+  assert.doesNotMatch(simple, /Destravar|Confirmar e destravar|Sim, executar teste/);
+});
+
+test("conectividade ausente não é apresentada como offline e comandos seguem indisponíveis", async () => {
+  const provider = new EkazaScenarioProvider("admin", async () => new Response(JSON.stringify({ devices: [{ providerDeviceId: "switch-1", name: "Interruptor", type: "switch", online: null, capabilities: ["switch_1"], enabled: true }] }), { status: 200 }), "https://api.example");
+  const [device] = await provider.listDevices();
+  assert.equal(device.online, null);
+  assert.equal(provider.realCommandsAvailable(), false);
+});
+
 test("falhas são amigáveis e a chave é solicitada somente quando necessária", () => {
   const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
   assert.match(simple, /getEkazaSimpleError/);

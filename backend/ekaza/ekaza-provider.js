@@ -13,10 +13,10 @@ function readError(config, providerDeviceId) {
 
 function sanitizeDevice(raw) {
   const mapped = mapTuyaDevice(raw);
-  const result = { id: raw.id, name: raw.name || raw.custom_name, type: mapped.type, category: raw.category, productName: raw.product_name ?? raw.productName, productId: raw.product_id ?? raw.productId, model: raw.model, online: Boolean(raw.online ?? raw.isOnline ?? raw.is_online), subDevice: raw.sub };
+  const result = { id: raw.id, name: raw.name || raw.custom_name, type: mapped.type, category: raw.category, productName: raw.product_name ?? raw.productName, productId: raw.product_id ?? raw.productId, model: raw.model, online: mapped.online, subDevice: raw.sub };
   const optional = { gatewayId: raw.gateway_id ?? raw.gatewayId ?? raw.parent_id ?? raw.parentId, timeZone: raw.time_zone ?? raw.timeZone, createTime: raw.create_time ?? raw.createTime, updateTime: raw.update_time ?? raw.updateTime, activeTime: raw.active_time ?? raw.activeTime };
   for (const [key, value] of Object.entries(optional)) if (available(value)) result[key] = value;
-  return Object.fromEntries(Object.entries(result).filter(([, value]) => available(value)));
+  return Object.fromEntries(Object.entries(result).filter(([key, value]) => key === "online" || available(value)));
 }
 
 function normalizeSpecification(items, writable, readable) {

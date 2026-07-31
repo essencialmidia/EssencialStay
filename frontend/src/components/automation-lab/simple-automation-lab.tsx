@@ -28,12 +28,13 @@ const scenario = AUTOMATION_LAB_SCENARIOS.find((item) => item.id === "scenario-0
 const typeLabels: Record<string, string> = { smart_lock: "Fechadura inteligente", switch: "Interruptor", socket: "Tomada inteligente", gateway: "Central de conexão", sensor: "Sensor", thermostat: "Controle de temperatura", light: "Iluminação", other: "Equipamento conectado" };
 const statusLabels: Record<HomologationStatus, string> = { not_started: "Não iniciado", testing: "Em teste", in_validation: "Em validação", homologated: "Homologado", homologated_with_restrictions: "Homologado com restrições", not_approved: "Não aprovado", archived: "Arquivado" };
 const resultLabels = { not_evaluated: "Ainda não avaliado", worked: "Funcionou", partial: "Funcionou parcialmente", failed: "Não funcionou" };
-const steps = ["Escolher o teste", "Encontrar equipamentos", "Conferir equipamentos", "Validar a utilidade", "Concluir"];
+const steps = ["Escolher o teste", "Encontrar equipamentos", "Conferir equipamentos", "Testar funcionamento", "Avaliar a utilidade", "Concluir"];
 
 function storageSafe() { return typeof window === "undefined" ? null : window.sessionStorage; }
 function toggle(values: string[], value: string) { return values.includes(value) ? values.filter((item) => item !== value) : [...values, value]; }
 function functionLabel(device: EkazaDevice) { return typeLabels[device.type] ?? typeLabels.other; }
 function errorCode(error: unknown) { return error instanceof EkazaScenarioError ? error.code : "api_unavailable"; }
+function connectivityLabel(online: boolean | null | undefined) { return online === true ? "Online" : online === false ? "Offline" : "Status não confirmado"; }
 
 export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
   const storage = storageSafe();
@@ -133,7 +134,7 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
   }
   function concludeEvaluation() {
     updateValidation({ status: "in_validation", evaluatedAt: new Date().toISOString() });
-    setStep(5);
+    setStep(6);
   }
   function decide(status: HomologationStatus) {
     const needsConfirmation = status === "homologated" || status === "homologated_with_restrictions";
@@ -149,7 +150,7 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
     setStep(0);
   }
 
-  const progress = step === 0 ? 0 : Math.round((Math.min(step, 5) / 5) * 100);
+  const progress = step === 0 ? 0 : Math.round((Math.min(step, 6) / 6) * 100);
   const selectedDevice = devices.find((device) => device.providerDeviceId === selectedProductId) ?? devices[0];
 
   return <div className="space-y-7">
@@ -173,9 +174,9 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
 
     {step === 0 ? <StartScreen onStart={startTest} /> : <>
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm"><span className="font-medium">Validação em andamento</span><span className="text-muted-foreground">Etapa {step} de 5</span></div>
+        <div className="flex items-center justify-between text-sm"><span className="font-medium">Validação em andamento</span><span className="text-muted-foreground">Etapa {step} de 6</span></div>
         <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all" style={{ width: `${progress}%` }} /></div>
-        <div className="hidden grid-cols-5 gap-2 md:grid">{steps.map((label, index) => <div key={label} className={`text-xs ${index + 1 <= step ? "font-medium text-primary" : "text-muted-foreground"}`}>{index + 1}. {label}</div>)}</div>
+        <div className="hidden grid-cols-6 gap-2 md:grid">{steps.map((label, index) => <div key={label} className={`text-xs ${index + 1 <= step ? "font-medium text-primary" : "text-muted-foreground"}`}>{index + 1}. {label}</div>)}</div>
       </div>
 
       {step === 1 && <GuidedCard number={1} title="Vamos verificar a conexão" description="Primeiro, vamos confirmar se a Casa Mairiporã consegue consultar a integração Ekaza. Nenhum equipamento será controlado.">
@@ -189,17 +190,24 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
       </GuidedCard>}
 
       {step === 3 && <GuidedCard number={3} title={devices.length ? `Encontramos ${devices.length} equipamento${devices.length === 1 ? "" : "s"}` : "Nenhum equipamento encontrado"} description="Confira se os equipamentos esperados apareceram. Os identificadores técnicos ficam ocultos nesta visão.">
-        <div className="space-y-3">{devices.map((device) => <div key={device.providerDeviceId} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">{device.name}</p><p className="mt-1 text-sm text-muted-foreground">{functionLabel(device)} · <span className={device.online ? "text-success" : "text-muted-foreground"}>{device.online ? "Online" : "Offline"}</span></p></div><Button variant="outline" size="sm" onClick={() => void openDetails(device)}>Ver detalhes</Button></div>)}</div>
+        <div className="space-y-3">{devices.map((device) => <div key={device.providerDeviceId} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">{device.name}</p><p className="mt-1 text-sm text-muted-foreground">{functionLabel(device)} · <span className={device.online === true ? "text-success" : "text-muted-foreground"}>{connectivityLabel(device.online)}</span></p>{device.online === null && <p className="mt-1 text-xs text-muted-foreground">Não foi possível confirmar se este equipamento está conectado.</p>}{device.online === false && <p className="mt-1 text-xs text-muted-foreground">Confira a energia e o gateway Zigbee.</p>}</div><Button variant="outline" size="sm" onClick={() => void openDetails(device)}>Ver detalhes</Button></div>)}</div>
         <div className="space-y-3 border-t pt-5"><p className="font-semibold">Os equipamentos que você esperava encontrar apareceram?</p>{[
           ["correct", "Sim, estão corretos"],
           ["missing", "Não, está faltando algum"],
           ["unknown", "Apareceu um equipamento desconhecido"],
         ].map(([value, label]) => <button key={value} type="button" onClick={() => updateValidation({ equipmentMatch: value as CommercialValidation["equipmentMatch"] })} className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left text-sm ${validation.equipmentMatch === value ? "border-primary bg-primary/[0.05]" : "hover:bg-surface"}`}><span className={`grid size-5 place-items-center rounded-full border ${validation.equipmentMatch === value ? "border-primary bg-primary text-primary-foreground" : ""}`}>{validation.equipmentMatch === value && <Check className="size-3" />}</span>{label}</button>)}</div>
         {validation.equipmentMatch && validation.equipmentMatch !== "correct" && <p className="rounded-lg bg-warning/[0.08] p-3 text-sm text-warning-foreground">Revise a instalação e a lista de equipamentos autorizados. Os detalhes técnicos continuam disponíveis no Modo técnico.</p>}
-        <Button size="lg" disabled={!validation.equipmentMatch || !devices.length} onClick={() => setStep(4)}>Continuar para avaliar a utilidade<ArrowRight className="size-4" /></Button>
+        <Button size="lg" disabled={!validation.equipmentMatch || !devices.length} onClick={() => setStep(4)}>Testar funcionamento<ArrowRight className="size-4" /></Button>
       </GuidedCard>}
 
-      {step === 4 && <GuidedCard number={4} title="Esta tecnologia entrega benefícios reais?" description="Registre a percepção prática. Você pode manter campos em aberto durante testes preliminares.">
+      {step === 4 && <GuidedCard number={4} title="Testar funcionamento" description="A integração Ekaza encontrada neste ambiente é somente leitura. Nenhum comando será enviado pelo Essencial Stay.">
+        <div className="space-y-3">{devices.map((device) => <div key={device.providerDeviceId} className="rounded-lg border p-4"><p className="font-semibold">{device.name}</p><p className="mt-1 text-sm text-muted-foreground">{connectivityLabel(device.online)} · {functionLabel(device)}</p><p className="mt-3 text-sm">Este equipamento foi encontrado, mas o controle remoto ainda não está disponível nesta integração.</p><div className="mt-3 flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => void openDetails(device)}>Atualizar estado</Button><Badge variant="info">Somente leitura</Badge></div></div>)}</div>
+        <div className="rounded-lg border border-info/20 bg-info/[0.05] p-4 text-sm"><p className="font-semibold">Teste manual externo</p><p className="mt-1 text-muted-foreground">Opere o equipamento pelo aplicativo oficial e registre abaixo o resultado. O comando foi realizado fora do Essencial Stay.</p></div>
+        <Choice label="O teste manual funcionou?"><Option active={validation.practicalResult === "worked"} onClick={() => updateValidation({ practicalResult: "worked" })}>Sim</Option><Option active={validation.practicalResult === "partial"} onClick={() => updateValidation({ practicalResult: "partial" })}>Parcialmente</Option><Option active={validation.practicalResult === "failed"} onClick={() => updateValidation({ practicalResult: "failed" })}>Não</Option></Choice>
+        <Button size="lg" onClick={() => setStep(5)}>Continuar para avaliar a utilidade<ArrowRight className="size-4" /></Button>
+      </GuidedCard>}
+
+      {step === 5 && <GuidedCard number={5} title="Esta tecnologia entrega benefícios reais?" description="Registre a percepção prática. Você pode manter campos em aberto durante testes preliminares.">
         {devices.length > 1 && <Choice label="Produto avaliado">{devices.map((device) => <Option key={device.providerDeviceId} active={selectedProductId === device.providerDeviceId} onClick={() => { setSelectedProductId(device.providerDeviceId); updateValidation({ productName: device.name, category: functionLabel(device) }); }}>{device.name}</Option>)}</Choice>}
         <Choice label="O equipamento funcionou como esperado?"><Option active={validation.practicalResult === "worked"} onClick={() => updateValidation({ practicalResult: "worked" })}>Sim</Option><Option active={validation.practicalResult === "partial"} onClick={() => updateValidation({ practicalResult: "partial" })}>Parcialmente</Option><Option active={validation.practicalResult === "failed"} onClick={() => updateValidation({ practicalResult: "failed" })}>Não</Option></Choice>
         <Choice label="A configuração foi fácil?">{[
@@ -213,7 +221,7 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
         <Button size="lg" onClick={concludeEvaluation}>Ver conclusão<ChevronRight className="size-4" /></Button>
       </GuidedCard>}
 
-      {step === 5 && <Conclusion validation={validation} device={selectedDevice} onDecision={decide} />}
+      {step === 6 && <Conclusion validation={validation} device={selectedDevice} onDecision={decide} />}
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-5">
         <p className="text-sm text-muted-foreground">{session && !isAutomationSessionExpired(session) ? `Este teste será encerrado automaticamente às ${new Date(session.endsAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.` : "Sessão encerrada."}</p>

@@ -27,6 +27,11 @@ test("mapeia dispositivo e não o habilita fora da allowlist", () => {
   assert.equal(device.guestControllable, false);
 });
 
+test("ausência de conectividade permanece não confirmada, sem virar offline", () => {
+  const device = mapTuyaDevice({ id: "device-1", name: "Interruptor touch", category: "kg" }, config);
+  assert.equal(device.online, null);
+});
+
 test("classifica a fechadura T429Z e categorias comuns", () => {
   assert.equal(classifyTuyaDevice({ name: "EKAZA Fechadura Digital Zigbee T429Z", category: "ms" }), "smart_lock");
   assert.equal(classifyTuyaDevice({ category: "cz" }), "socket");
