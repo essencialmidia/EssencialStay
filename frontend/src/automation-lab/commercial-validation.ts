@@ -95,6 +95,7 @@ export function loadCommercialValidation(storage: Pick<Storage, "getItem">): Com
 export const capabilityLabels: Record<string, string> = {
   on_off: "Liga e desliga",
   switch: "Liga e desliga",
+  switch_1: "Liga e desliga",
   status: "Consulta o estado",
   battery: "Mostra a bateria",
   battery_percentage: "Mostra a bateria",
@@ -104,8 +105,9 @@ export const capabilityLabels: Record<string, string> = {
   energy: "Mede o consumo de energia",
   energy_meter: "Mede o consumo de energia",
   closed_opened: "Mostra se está aberto ou fechado",
+  unlock: "Possível recurso de destravamento informado pelo fabricante, ainda não disponível no Essencial Stay",
 };
 
 export function friendlyCapability(code: string) {
-  return capabilityLabels[code] ?? "Recurso identificado";
+  return capabilityLabels[code] ?? "Recurso técnico identificado";
 }

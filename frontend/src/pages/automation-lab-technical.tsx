@@ -34,6 +34,13 @@ import {
   type LabScenario,
   type ProviderDiagnostic,
 } from "../automation-lab/automation-lab";
+import { friendlyCapability } from "../automation-lab/commercial-validation";
+import {
+  clearSimpleLabState,
+  loadSimpleLabState,
+  saveSimpleLabState,
+  type SimpleLabState,
+} from "../automation-lab/simple-lab-state";
 import { EkazaScenarioPanel } from "../components/automation-lab/ekaza-scenario-panel";
 import { PageHeader } from "../components/layout/page-header";
 import { Badge } from "../components/ui/badge";
@@ -84,7 +91,8 @@ function dateTime(value?: string | null) {
 }
 
 function scenarioNumber(id: string) {
-  return `Scenario ${id.slice(-2)}`;
+  const match = /^scenario-(\d+)/.exec(id);
+  return `Cenário ${match?.[1]?.padStart(2, "0") ?? id}`;
 }
 
 function scenarioProvider(scenario: LabScenario) {
@@ -100,16 +108,34 @@ export function AutomationLabTechnicalMode({ onExitTechnicalMode }: { onExitTech
   const [section, setSection] = useState<Section>("dashboard");
   const [selectedScenarioId, setSelectedScenarioId] = useState("scenario-01-casa-mairipora");
   const [sessions, setSessions] = useState<AutomationSession[]>(() => storage ? loadAutomationSessions(storage) : []);
+  const [sharedState, setSharedState] = useState<SimpleLabState | null>(() => storage ? loadSimpleLabState(storage) : null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(() => sessions.find((item) => item.status === "active")?.id ?? null);
-  const [logs, setLogs] = useState<LabLog[]>([]);
+  const [logs, setLogs] = useState<LabLog[]>(() => sharedState?.logs ?? []);
   const [diagnostics, setDiagnostics] = useState<ProviderDiagnostic[]>([]);
   const [reportOpen, setReportOpen] = useState(false);
   const [commandDeviceId, setCommandDeviceId] = useState("ekaza-lock-01");
   const [command, setCommand] = useState("lock");
 
-  const selectedScenario = AUTOMATION_LAB_SCENARIOS.find((item) => item.id === selectedScenarioId) ?? AUTOMATION_LAB_SCENARIOS[0];
+  const selectedCatalogScenario = AUTOMATION_LAB_SCENARIOS.find((item) => item.id === selectedScenarioId) ?? AUTOMATION_LAB_SCENARIOS[0];
+  const selectedScenario = useMemo<LabScenario>(() => selectedCatalogScenario.id !== "scenario-01-casa-mairipora" || !sharedState?.inventory.length ? selectedCatalogScenario : {
+    ...selectedCatalogScenario,
+    devices: sharedState.inventory.map((device) => ({
+      id: device.deviceKey,
+      name: device.name,
+      type: device.type,
+      model: "Modelo consultado pelo provider",
+      firmware: device.lastReadAt ? `Leitura de ${dateTime(device.lastReadAt)}` : "Leitura ainda não atualizada",
+      capabilities: device.capabilities,
+      allowedCommands: [],
+      state: device.online === true ? "online" : "offline",
+      mode: "read_only",
+      allowlisted: false,
+    })),
+    capabilities: [...new Set(sharedState.inventory.flatMap((device) => device.capabilities))],
+  }, [selectedCatalogScenario, sharedState]);
   const activeSession = sessions.find((item) => item.id === selectedSessionId && item.status === "active") ?? null;
-  const activeScenario = activeSession ? AUTOMATION_LAB_SCENARIOS.find((item) => item.id === activeSession.scenarioId) ?? selectedScenario : selectedScenario;
+  const activeCatalogScenario = activeSession ? AUTOMATION_LAB_SCENARIOS.find((item) => item.id === activeSession.scenarioId) : null;
+  const activeScenario = activeCatalogScenario?.id === selectedScenario.id ? selectedScenario : activeCatalogScenario ?? selectedScenario;
   const provider = scenarioProvider(activeScenario);
   const selectedDevice = activeScenario.devices.find((item) => item.id === commandDeviceId) ?? activeScenario.devices[0];
   const selectedSessionDevice = activeSession?.devices.find((item) => item.id === selectedDevice?.id);
@@ -128,7 +154,13 @@ export function AutomationLabTechnicalMode({ onExitTechnicalMode }: { onExitTech
 
   function addLog(operation: string, detail: unknown, level: LabLog["level"] = "info") {
     const sessionId = activeSession?.id ?? "lab-catalog";
-    setLogs((current) => [createLabLog(sessionId, operation, detail, level), ...current].slice(0, 100));
+    const log = createLabLog(sessionId, operation, detail, level);
+    setLogs((current) => [log, ...current].slice(0, 100));
+    if (sharedState && storage) {
+      const next = { ...sharedState, logs: [log, ...sharedState.logs].slice(0, 100) };
+      setSharedState(next);
+      saveSimpleLabState(storage, next);
+    }
   }
 
   function startSession() {
@@ -144,8 +176,12 @@ export function AutomationLabTechnicalMode({ onExitTechnicalMode }: { onExitTech
     if (!activeSession) return;
     const ended = endAutomationSession(activeSession);
     if (ended.scenarioId === "scenario-01-casa-mairipora") {
-      if (storage) clearAutomationSessions(storage);
+      if (storage) {
+        clearAutomationSessions(storage);
+        clearSimpleLabState(storage);
+      }
       setSessions([]);
+      setSharedState(null);
       setSelectedSessionId(null);
       setLogs([]);
       return;
@@ -156,8 +192,12 @@ export function AutomationLabTechnicalMode({ onExitTechnicalMode }: { onExitTech
   }
 
   function clearSessions() {
-    if (storage) clearAutomationSessions(storage);
+    if (storage) {
+      clearAutomationSessions(storage);
+      clearSimpleLabState(storage);
+    }
     setSessions([]);
+    setSharedState(null);
     setSelectedSessionId(null);
     setLogs([]);
   }
@@ -216,7 +256,7 @@ export function AutomationLabTechnicalMode({ onExitTechnicalMode }: { onExitTech
       {section === "diagnostics" && <Diagnostics diagnostics={diagnostics} scenario={selectedScenario} onRun={() => void runDiagnostic()} />}
       {section === "reports" && <Reports scenario={selectedScenario} diagnostics={diagnostics} onGenerate={() => { setReportOpen(true); addLog("report.generated", { scenarioId: selectedScenario.id }, "success"); }} />}
 
-      {selectedScenario.id === "scenario-01-casa-mairipora" && ["scenarios", "sessions", "devices", "diagnostics"].includes(section) && <EkazaScenarioPanel
+      {selectedScenario.id === "scenario-01-casa-mairipora" && ["scenarios", "sessions", "diagnostics"].includes(section) && <EkazaScenarioPanel
         session={activeSession?.scenarioId === selectedScenario.id ? activeSession : null}
         onSessionChange={(next) => persist(sessions.map((item) => item.id === next.id ? next : item))}
         onLog={addLog}
@@ -255,7 +295,7 @@ function Dashboard({ stats, onNavigate }: { stats: { scenarios: number; active: 
 
 function Scenarios({ selectedId, onSelect, onStart }: { selectedId: string; onSelect: (id: string) => void; onStart: () => void }) {
   const scenario = AUTOMATION_LAB_SCENARIOS.find((item) => item.id === selectedId) ?? AUTOMATION_LAB_SCENARIOS[0];
-  return <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]"><Card><CardHeader><CardTitle>Catálogo de cenários</CardTitle><CardDescription>Ambientes técnicos escaláveis, separados da operação de propriedades.</CardDescription></CardHeader><CardContent className="space-y-2">{AUTOMATION_LAB_SCENARIOS.map((item) => <button key={item.id} type="button" onClick={() => onSelect(item.id)} className={`flex w-full items-center justify-between gap-4 rounded-lg border p-4 text-left transition ${selectedId === item.id ? "border-primary bg-primary/[0.05]" : "hover:bg-surface"}`}><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">{scenarioNumber(item.id)}</p><p className="mt-1 font-semibold">{item.name}</p><p className="text-sm text-muted-foreground">{item.manufacturer} · {item.category}</p></div><div className="text-right"><Badge variant={certificationVariant[item.certification]}>{certificationLabels[item.certification]}</Badge><p className="mt-2 text-xs text-muted-foreground">{item.status === "active" ? "Ativo" : "Planejado"}</p></div></button>)}</CardContent></Card><Card className="h-fit xl:sticky xl:top-5"><CardHeader><CardTitle>{scenarioNumber(scenario.id)} · {scenario.name}</CardTitle><CardDescription>{scenario.description}</CardDescription></CardHeader><CardContent className="space-y-5"><dl className="grid grid-cols-2 gap-4 text-sm">{[["Fabricante", scenario.manufacturer], ["Provider", scenarioProvider(scenario)?.name ?? "Reservado"], ["API", scenario.apiVersion], ["Ambiente", "Laboratório"], ["Última validação", dateTime(scenario.lastValidation)], ["Dispositivos", String(scenario.devices.length)]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 font-medium">{value}</dd></div>)}</dl><div><p className="text-sm font-semibold">Capabilities</p><div className="mt-2 flex flex-wrap gap-2">{scenario.capabilities.length ? scenario.capabilities.map((item) => <Badge key={item} variant="outline">{item}</Badge>) : <span className="text-sm text-muted-foreground">Aguardando provider.</span>}</div></div><div><p className="text-sm font-semibold">Limitações</p><ul className="mt-2 space-y-2 text-sm text-muted-foreground">{scenario.limitations.map((item) => <li key={item} className="flex gap-2"><CircleOff className="mt-0.5 size-4 shrink-0" />{item}</li>)}</ul></div><Button className="w-full" disabled={scenario.status !== "active"} onClick={onStart}><Play className="size-4" />Iniciar sessão temporária</Button></CardContent></Card></div>;
+  return <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]"><Card><CardHeader><CardTitle>Catálogo de cenários</CardTitle><CardDescription>Ambientes técnicos escaláveis, separados da operação de propriedades.</CardDescription></CardHeader><CardContent className="space-y-2">{AUTOMATION_LAB_SCENARIOS.map((item) => <button key={item.id} type="button" onClick={() => onSelect(item.id)} className={`flex w-full items-center justify-between gap-4 rounded-lg border p-4 text-left transition ${selectedId === item.id ? "border-primary bg-primary/[0.05]" : "hover:bg-surface"}`}><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">{scenarioNumber(item.id)}</p><p className="mt-1 font-semibold">{item.name}</p><p className="text-sm text-muted-foreground">{item.manufacturer} · {item.category}</p></div><div className="text-right"><Badge variant={certificationVariant[item.certification]}>{certificationLabels[item.certification]}</Badge><p className="mt-2 text-xs text-muted-foreground">{item.status === "active" ? "Ativo" : "Planejado"}</p></div></button>)}</CardContent></Card><Card className="h-fit xl:sticky xl:top-5"><CardHeader><CardTitle>{scenarioNumber(scenario.id)} — {scenario.name}</CardTitle><CardDescription>{scenario.description}</CardDescription></CardHeader><CardContent className="space-y-5"><dl className="grid grid-cols-2 gap-4 text-sm">{[["Fabricante", scenario.manufacturer], ["Provider", scenarioProvider(scenario)?.name ?? "Reservado"], ["API", scenario.apiVersion], ["Ambiente", "Laboratório"], ["Última validação", dateTime(scenario.lastValidation)], ["Dispositivos", String(scenario.devices.length)]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 font-medium">{value}</dd></div>)}</dl><div><p className="text-sm font-semibold">Capabilities</p><div className="mt-2 flex flex-wrap gap-2">{scenario.capabilities.length ? scenario.capabilities.map((item) => <Badge key={item} variant="outline">{friendlyCapability(item)}</Badge>) : <span className="text-sm text-muted-foreground">Aguardando provider.</span>}</div></div><div><p className="text-sm font-semibold">Limitações</p><ul className="mt-2 space-y-2 text-sm text-muted-foreground">{scenario.limitations.map((item) => <li key={item} className="flex gap-2"><CircleOff className="mt-0.5 size-4 shrink-0" />{item}</li>)}</ul></div><Button className="w-full" disabled={scenario.status !== "active"} onClick={onStart}><Play className="size-4" />Iniciar sessão temporária</Button></CardContent></Card></div>;
 }
 
 function Sessions({ sessions, activeSession, activeScenario, onSelect, onFinish, onClear, onDeviceChange }: { sessions: AutomationSession[]; activeSession: AutomationSession | null; activeScenario: LabScenario; onSelect: (id: string) => void; onFinish: () => void; onClear: () => void; onDeviceChange: (id: string, patch: Partial<AutomationSession["devices"][number]>) => void }) {
@@ -267,7 +307,7 @@ function Providers() {
 }
 
 function Devices({ scenario, session }: { scenario: LabScenario; session: AutomationSession | null }) {
-  return <Card><CardHeader><CardTitle>Dispositivos · {scenario.name}</CardTitle><CardDescription>Inventário retornado pelo provider. Nenhum dispositivo inicia em modo real.</CardDescription></CardHeader><CardContent className="space-y-3">{scenario.devices.length ? scenario.devices.map((device) => { const value = session?.devices.find((item) => item.id === device.id); return <div key={device.id} className="grid gap-3 rounded-lg border p-4 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-center"><div><p className="font-medium">{device.name}</p><p className="text-xs text-muted-foreground">{device.id}</p></div><p className="text-sm">{device.type}<span className="block text-xs text-muted-foreground">{device.model} · {device.firmware}</span></p><div className="flex flex-wrap gap-1">{device.capabilities.map((item) => <Badge key={item} variant="outline">{item}</Badge>)}</div><div className="flex gap-2"><Badge variant={device.state === "online" ? "success" : "muted"}>{device.state}</Badge><Badge variant={value?.mode === "real" ? "warning" : "info"}>{deviceModeLabels[value?.mode ?? device.mode]}</Badge></div></div>; }) : <p className="py-8 text-center text-sm text-muted-foreground">O provider deste cenário ainda não publicou dispositivos.</p>}</CardContent></Card>;
+  return <Card><CardHeader><CardTitle>Dispositivos · {scenario.name}</CardTitle><CardDescription>Mesmo inventário consultado no Modo Simples, exibido com identificadores técnicos mascarados e sempre em somente leitura.</CardDescription></CardHeader><CardContent className="space-y-3">{scenario.devices.length ? scenario.devices.map((device) => { const value = session?.devices.find((item) => item.id === device.id); return <div key={device.id} className="grid gap-3 rounded-lg border p-4 md:grid-cols-[1.2fr_1fr_1fr_auto] md:items-center"><div><p className="font-medium">{device.name}</p><p className="text-xs text-muted-foreground">{device.id}</p></div><p className="text-sm">{device.type}<span className="block text-xs text-muted-foreground">{device.model} · {device.firmware}</span></p><div className="flex flex-wrap gap-1">{device.capabilities.map((item) => <Badge key={item} variant="outline">{friendlyCapability(item)}</Badge>)}</div><div className="flex gap-2"><Badge variant={device.state === "online" ? "success" : "muted"}>{device.state}</Badge><Badge variant={value?.mode === "real" ? "warning" : "info"}>{deviceModeLabels[value?.mode ?? device.mode]}</Badge></div></div>; }) : <p className="py-8 text-center text-sm text-muted-foreground">Consulte os equipamentos no Modo Simples para compartilhar o inventário com esta visão técnica.</p>}</CardContent></Card>;
 }
 
 function Logs({ logs }: { logs: LabLog[] }) {

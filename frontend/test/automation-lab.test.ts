@@ -15,6 +15,20 @@ import {
 } from "../src/automation-lab/automation-lab.ts";
 import { EkazaScenarioError, EkazaScenarioProvider, getEkazaSimpleError, maskProviderDeviceId } from "../src/automation-lab/ekaza-scenario.ts";
 import { createCommercialValidation, decideHomologation, friendlyCapability } from "../src/automation-lab/commercial-validation.ts";
+import {
+  allDevicesEvaluated,
+  clearSimpleLabState,
+  consolidatedCounts,
+  createDeviceKey,
+  createSimpleLabState,
+  decideDevice,
+  initializeInventory,
+  loadSimpleLabState,
+  markDeviceNotEvaluated,
+  saveSimpleLabState,
+  updateDeviceEvaluation,
+  type SimpleLabInventoryItem,
+} from "../src/automation-lab/simple-lab-state.ts";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -174,14 +188,16 @@ test("fluxo simples usa health e allowlist reais, esconde IDs e traduz recursos"
   assert.equal(friendlyCapability("on_off"), "Liga e desliga");
   assert.equal(friendlyCapability("battery"), "Mostra a bateria");
   assert.equal(friendlyCapability("temporary_access"), "Cria acesso temporário");
-  assert.equal(friendlyCapability("unknown_code"), "Recurso identificado");
+  assert.equal(friendlyCapability("switch_1"), "Liga e desliga");
+  assert.match(friendlyCapability("unlock"), /ainda não disponível/);
+  assert.equal(friendlyCapability("unknown_code"), "Recurso técnico identificado");
 });
 
 test("Modo Simples inclui teste manual entre a conferência e a avaliação, sem comando real", () => {
   const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
   assert.match(simple, /"Conferir equipamentos", "Testar funcionamento", "Avaliar a utilidade"/);
   assert.match(simple, /Status não confirmado/);
-  assert.match(simple, /Não foi possível confirmar se este equipamento está conectado/);
+  assert.match(simple, /Status não confirmado/);
   assert.match(simple, /Teste manual externo/);
   assert.match(simple, /O comando foi realizado fora do Essencial Stay/);
   assert.doesNotMatch(simple, /Destravar|Confirmar e destravar|Sim, executar teste/);
@@ -208,7 +224,7 @@ test("Modo Simples deixa Casa Mairiporã independente do contexto global da empr
   const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
   assert.match(simple, /AMBIENTE DO TESTE/);
   assert.match(simple, /Casa Mairiporã/);
-  assert.match(simple, /O Automation Lab é um ambiente independente e não altera a empresa atualmente visualizada/);
+  assert.match(simple, /O Automation Lab é independente: a empresa visualizada no cabeçalho não participa deste teste/);
   assert.doesNotMatch(simple, /Hotel Summit Monaco/);
 });
 
@@ -220,10 +236,73 @@ test("avaliação registra benefícios e indicações sem homologar automaticame
   assert.equal(decideHomologation(validation, "homologated_with_restrictions", true).portfolioAvailability, "restricted");
   const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
   assert.match(simple, /Os equipamentos que você esperava encontrar apareceram/);
-  assert.match(simple, /Quais benefícios foram comprovados/);
+  assert.match(simple, /Benefícios comprovados no teste/);
   assert.match(simple, /Para quais tipos de hospedagem/);
   assert.match(simple, /window\.confirm/);
   assert.match(simple, /Modo técnico/);
+});
+
+test("avaliações ficam isoladas por equipamento e sobrevivem à troca de seleção", () => {
+  const inventory = [
+    { provider: "ekaza", providerDeviceId: "lock-01", deviceKey: createDeviceKey({ provider: "ekaza", providerDeviceId: "lock-01" }), maskedProviderDeviceId: "loc••••-01", name: "Fechadura", type: "smart_lock", online: true, capabilities: ["battery"], enabled: true, lastReadAt: null, queryState: "found" },
+    { provider: "ekaza", providerDeviceId: "switch-01", deviceKey: createDeviceKey({ provider: "ekaza", providerDeviceId: "switch-01" }), maskedProviderDeviceId: "swi••••-01", name: "Interruptor", type: "switch", online: false, capabilities: ["switch_1"], enabled: true, lastReadAt: null, queryState: "found" },
+  ] as SimpleLabInventoryItem[];
+  let state = initializeInventory(createSimpleLabState(), inventory);
+  state = updateDeviceEvaluation(state, inventory[0].deviceKey, {
+    practicalResult: "worked",
+    physicalTest: "yes",
+    actionLocation: "manufacturer_app",
+    validationEase: "easy",
+    practicalObservation: "Testado presencialmente",
+    recommendedFor: ["Hotel"],
+    potentialBenefits: ["Aumenta a segurança"],
+    provenBenefits: ["Reduz trabalho manual"],
+  });
+  state = markDeviceNotEvaluated(state, inventory[1].deviceKey, "offline");
+
+  assert.equal(state.evaluationsByDevice[inventory[0].deviceKey].practicalResult, "worked");
+  assert.equal(state.evaluationsByDevice[inventory[1].deviceKey].practicalResult, "not_tested");
+  assert.equal(state.evaluationsByDevice[inventory[1].deviceKey].unableReason, "offline");
+  assert.match(state.evaluationsByDevice[inventory[1].deviceKey].systemLimitations.join(" "), /offline/i);
+  assert.deepEqual(state.evaluationsByDevice[inventory[0].deviceKey].provenBenefits, ["Reduz trabalho manual"]);
+  assert.equal(allDevicesEvaluated(state), true);
+  assert.deepEqual(consolidatedCounts(state), { found: 2, evaluated: 2, homologated: 0, testing: 1 });
+});
+
+test("estado completo do laboratório persiste em sessionStorage sem chave administrativa", () => {
+  const storage = new MemoryStorage();
+  const device = { provider: "ekaza", providerDeviceId: "device-secret", deviceKey: createDeviceKey({ provider: "ekaza", providerDeviceId: "device-secret" }), maskedProviderDeviceId: "dev••••ret", name: "Sensor", type: "sensor", online: true, capabilities: ["status"], enabled: true, lastReadAt: "2026-07-30T12:00:00.000Z", queryState: "updated" } as SimpleLabInventoryItem;
+  let state = initializeInventory({ ...createSimpleLabState(), step: 5, sessionStatus: "active" }, [device]);
+  state = updateDeviceEvaluation(state, device.deviceKey, { practicalObservation: "Leitura confirmada", commercialSuggestion: "Usar em áreas comuns" });
+  saveSimpleLabState(storage, state);
+  const restored = loadSimpleLabState(storage);
+
+  assert.equal(restored.step, 5);
+  assert.equal(restored.selectedDeviceKey, device.deviceKey);
+  assert.equal(restored.evaluationsByDevice[device.deviceKey].commercialSuggestion, "Usar em áreas comuns");
+  assert.doesNotMatch(storage.getItem("essencialstay:automation-lab:simple-state:v2") ?? "", /adminKey|chave administrativa/i);
+  clearSimpleLabState(storage);
+  assert.equal(loadSimpleLabState(storage).inventory.length, 0);
+});
+
+test("decisão por equipamento exige confirmação e não substitui o consolidado", () => {
+  const device = { provider: "ekaza", providerDeviceId: "device-1", deviceKey: "device-safe", maskedProviderDeviceId: "dev••••e-1", name: "Tomada", type: "socket", online: true, capabilities: [], enabled: true, lastReadAt: null, queryState: "found" } as SimpleLabInventoryItem;
+  const initial = initializeInventory(createSimpleLabState(), [device]);
+  assert.equal(decideDevice(initial, device.deviceKey, "homologated", false), initial);
+  const decided = decideDevice(initial, device.deviceKey, "homologated_with_restrictions", true);
+  assert.equal(decided.evaluationsByDevice[device.deviceKey].decision, "homologated_with_restrictions");
+  assert.equal(consolidatedCounts(decided).homologated, 1);
+});
+
+test("modo técnico reutiliza inventário e logs sanitizados sem habilitar comandos", () => {
+  const technical = readFileSync(new URL("../src/pages/automation-lab-technical.tsx", import.meta.url), "utf8");
+  assert.match(technical, /loadSimpleLabState/);
+  assert.match(technical, /sharedState\.inventory/);
+  assert.match(technical, /allowedCommands: \[\]/);
+  assert.match(technical, /mode: "read_only"/);
+  assert.match(technical, /friendlyCapability/);
+  assert.match(technical, /Cenário.*padStart/);
+  assert.doesNotMatch(technical, /Scenario \$\{id\.slice/);
 });
 
 test("Studio Vila Nova e Demo Hotel continuam usando seus fluxos existentes", () => {
