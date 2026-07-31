@@ -104,8 +104,11 @@ const casaMairiporaScenario: LabScenario = {
     portalAvailable: true,
 };
 
+const akubelaScenario: LabScenario = {
+  id: "scenario-02", name: "Bancada Akubela PG42", description: "Inventário técnico do HyPanel Elite 7 (PG42) por provider abstrato somente leitura.", category: "Bancada de testes", status: "active", manufacturer: "Akubela", providerId: "akubela-repository", apiVersion: "OpenAPI aguardando credenciais", lastValidation: null, environment: "laboratory", certification: "compatible", devices: [], capabilities: ["device_inventory", "status", "capabilities", "diagnostics"], limitations: ["OpenAPI ainda não habilitada.", "Nenhum comando, PIN ou operação de escrita é disponibilizado."], notes: "Cenário 02 usa DeviceRepository e InventoryCache; o modo OpenAPI não efetua requisições sem credenciais.", portalAvailable: false,
+};
+
 const plannedScenarios: Array<[string, string, string, string, string, CertificationStatus]> = [
-  ["scenario-02", "Hotel Mônaco", "Akubela", "Hospitalidade", "v1", "compatible"],
   ["scenario-03", "Yale Connect", "Yale", "Controle de acesso", "Hub Connect", "in_validation"],
   ["scenario-04", "Shelly", "Shelly", "Energia e relés", "HTTP/MQTT", "experimental"],
   ["scenario-05", "Aqara", "Aqara", "Sensores e automação", "Cloud API", "experimental"],
@@ -117,6 +120,7 @@ const plannedScenarios: Array<[string, string, string, string, string, Certifica
 
 export const AUTOMATION_LAB_SCENARIOS: LabScenario[] = [
   casaMairiporaScenario,
+  akubelaScenario,
   ...plannedScenarios.map((entry, index) => {
   const [id, name, manufacturer, category, apiVersion, certification] = entry;
   return {
@@ -199,7 +203,6 @@ class CatalogProvider implements AutomationLabProvider {
 
 export const automationLabProviders = new Map<string, AutomationLabProvider>([
   ["ekaza", new CatalogProvider("ekaza", "Ekaza", "in_validation")],
-  ["provider-02", new CatalogProvider("provider-02", "Akubela", "compatible")],
   ["provider-03", new CatalogProvider("provider-03", "Yale", "in_validation")],
   ["provider-04", new CatalogProvider("provider-04", "Shelly", "experimental")],
   ["provider-05", new CatalogProvider("provider-05", "Aqara", "experimental")],
@@ -254,7 +257,7 @@ export function clearAutomationSessions(storage: Pick<Storage, "removeItem">) {
   storage.removeItem(AUTOMATION_LAB_STORAGE_KEY);
 }
 
-const sensitiveKey = /(pin|token|secret|senha|password|credential|telefone|phone|message|mensagem)/i;
+const sensitiveKey = /(pin|token|secret|senha|password|credential|telefone|phone|message|mensagem|mac|serial|device.?id|location.?id|project.?id)/i;
 
 export function sanitizeLabLog(value: unknown): string {
   const seen = new WeakSet<object>();
