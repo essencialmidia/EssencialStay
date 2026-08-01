@@ -15,6 +15,11 @@ import {
 } from "../src/automation-lab/automation-lab.ts";
 import { EkazaScenarioError, EkazaScenarioProvider, getEkazaSimpleError, maskProviderDeviceId } from "../src/automation-lab/ekaza-scenario.ts";
 import { createCommercialValidation, decideHomologation, friendlyCapability } from "../src/automation-lab/commercial-validation.ts";
+import { AkubelaMockRepository } from "../src/akubela/akubela-mock-repository.ts";
+import { AkubelaOpenApiRepository } from "../src/akubela/akubela-openapi-repository.ts";
+import { InventoryCache } from "../src/akubela/inventory-cache.ts";
+import { mapAkubelaToEssencialStayDevice } from "../src/akubela/akubela-mapper.ts";
+import { maskAkubelaIdentifier, sanitizeAkubelaLog } from "../src/akubela/akubela-sanitizer.ts";
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -65,10 +70,52 @@ test("providers mantêm contratos e catálogos independentes", () => {
   const ekaza = automationLabProviders.get("ekaza");
   const akubela = automationLabProviders.get("provider-02");
   assert.ok(ekaza);
-  assert.ok(akubela);
-  assert.notEqual(ekaza, akubela);
+  assert.equal(akubela, undefined);
   assert.equal(ekaza.listDevices(AUTOMATION_LAB_SCENARIOS[0]).length, 0);
-  assert.equal(akubela.listDevices(AUTOMATION_LAB_SCENARIOS[0]).length, 0);
+});
+
+test("Cenário 02 usa DeviceRepository mock no contrato Akubela e nunca comandos", async () => {
+  const repository = new AkubelaMockRepository();
+  const [project] = await repository.getProjects();
+  const devices = await repository.getDevices(project.id);
+  const panel = devices.find((item) => item.type === "control_panel");
+  assert.equal(AUTOMATION_LAB_SCENARIOS[1].id, "scenario-02");
+  assert.equal(AUTOMATION_LAB_SCENARIOS[1].name, "Bancada Akubela PG42");
+  assert.equal(devices.length, 6);
+  assert.equal(panel?.model, "HyPanel Elite 7");
+  assert.equal(panel?.technical.firmware_version, "42.1.38.93");
+  assert.equal(mapAkubelaToEssencialStayDevice(panel!).kind, "PanelDevice");
+  assert.equal(mapAkubelaToEssencialStayDevice(devices.find((item) => item.type === "smart_lock")!).kind, "DoorLockDevice");
+  assert.equal((await repository.getStatus(panel!.providerDeviceId))?.states.length, 0);
+});
+
+test("Modo Simples exibe os dois cenários e abre Akubela sem exigir Modo Técnico", () => {
+  const simple = readFileSync(new URL("../src/components/automation-lab/simple-automation-lab.tsx", import.meta.url), "utf8");
+  assert.match(simple, /Escolha o cenário de teste/);
+  assert.match(simple, /Cenário 01[\s\S]*Casa Mairiporã[\s\S]*Ekaza/s);
+  assert.match(simple, /Cenário 02[\s\S]*Bancada Akubela PG42[\s\S]*HyPanel Elite 7/s);
+  assert.match(simple, /AkubelaScenarioPanel/);
+  assert.match(simple, /Voltar para escolher cenário/);
+  assert.match(simple, /Aguardando credenciais OpenAPI Akubela|modo OpenAPI permanece indisponível/i);
+});
+
+test("cache de inventário fica em memória e logs mascaram identificadores Akubela", async () => {
+  const repository = new AkubelaMockRepository();
+  const [device] = await repository.getDevices();
+  const cache = new InventoryCache();
+  cache.set({ device, status: await repository.getStatus(device.providerDeviceId), capabilities: await repository.getCapabilities(device.providerDeviceId), lastReadAt: "2026-07-31T12:00:00.000Z", origin: "mock", provider: "akubela", online: device.online });
+  assert.equal(cache.get(device.providerDeviceId)?.origin, "mock");
+  assert.equal(maskAkubelaIdentifier(device.providerDeviceId).includes(device.providerDeviceId), false);
+  const log = sanitizeAkubelaLog({ deviceId: device.providerDeviceId, serial: "serial-completo", safe: "inventory.loaded" });
+  assert.doesNotMatch(log, /pg42|serial-completo/i);
+});
+
+test("modo OpenAPI permanece inerte enquanto credenciais não existem", async () => {
+  const repository = new AkubelaOpenApiRepository();
+  const health = await repository.getHealth();
+  assert.equal(health.connected, false);
+  assert.match(health.message ?? "", /Aguardando credenciais OpenAPI Akubela/);
+  await assert.rejects(() => repository.getProjects(), /openapi_credentials_unavailable/);
 });
 
 test("adapter Ekaza usa apenas endpoints de leitura e filtra a allowlist retornada pela API", async () => {

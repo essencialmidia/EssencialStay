@@ -35,6 +35,7 @@ import {
   type ProviderDiagnostic,
 } from "../automation-lab/automation-lab";
 import { EkazaScenarioPanel } from "../components/automation-lab/ekaza-scenario-panel";
+import { AkubelaScenarioPanel } from "../components/automation-lab/akubela-scenario-panel";
 import { PageHeader } from "../components/layout/page-header";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -84,7 +85,7 @@ function dateTime(value?: string | null) {
 }
 
 function scenarioNumber(id: string) {
-  return `Scenario ${id.slice(-2)}`;
+  return id === "scenario-02" ? "Cenário 02" : `Scenario ${id.slice(-2)}`;
 }
 
 function scenarioProvider(scenario: LabScenario) {
@@ -221,6 +222,7 @@ export function AutomationLabTechnicalMode({ onExitTechnicalMode }: { onExitTech
         onSessionChange={(next) => persist(sessions.map((item) => item.id === next.id ? next : item))}
         onLog={addLog}
       />}
+      {selectedScenario.id === "scenario-02" && ["scenarios", "devices", "diagnostics"].includes(section) && <AkubelaScenarioPanel />}
 
       {activeSession && selectedDevice && (
         <Card>

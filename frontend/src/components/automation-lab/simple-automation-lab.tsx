@@ -20,9 +20,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Input } from "../ui/input";
 import { Modal } from "../ui/modal";
 import { Textarea } from "../ui/textarea";
+import { AkubelaScenarioPanel } from "./akubela-scenario-panel";
 
 type Props = { onOpenTechnicalMode: () => void };
 type Detail = { device: EkazaDevice; details?: EkazaDetails; status?: EkazaStatus; capabilities?: EkazaCapabilities };
+type SimpleScenario = "ekaza" | "akubela";
 
 const scenario = AUTOMATION_LAB_SCENARIOS.find((item) => item.id === "scenario-01-casa-mairipora") ?? AUTOMATION_LAB_SCENARIOS[0];
 const typeLabels: Record<string, string> = { smart_lock: "Fechadura inteligente", switch: "Interruptor", socket: "Tomada inteligente", gateway: "Central de conexão", sensor: "Sensor", thermostat: "Controle de temperatura", light: "Iluminação", other: "Equipamento conectado" };
@@ -52,6 +54,7 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [validation, setValidation] = useState<CommercialValidation>(() => storage ? loadCommercialValidation(storage) : createCommercialValidation());
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedScenario, setSelectedScenario] = useState<SimpleScenario | null>(null);
   const provider = useMemo(() => new EkazaScenarioProvider(adminKey), [adminKey]);
 
   function persistSession(next: AutomationSession) {
@@ -153,12 +156,15 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
   const progress = step === 0 ? 0 : Math.round((Math.min(step, 6) / 6) * 100);
   const selectedDevice = devices.find((device) => device.providerDeviceId === selectedProductId) ?? devices[0];
 
+  if (!selectedScenario) return <ScenarioChooser onChoose={setSelectedScenario} onOpenTechnicalMode={onOpenTechnicalMode} />;
+  if (selectedScenario === "akubela") return <AkubelaSimpleExperience onBack={() => setSelectedScenario(null)} onOpenTechnicalMode={onOpenTechnicalMode} />;
+
   return <div className="space-y-7">
     <PageHeader
       title="Automation Lab"
       description="Teste novas tecnologias em ambientes reais e descubra quais soluções podem fazer parte do portfólio da Essencial Stay."
       badge="Teste. Valide. Venda."
-      actions={<Button variant="ghost" size="sm" onClick={onOpenTechnicalMode}><Settings2 className="size-4" />Modo técnico</Button>}
+      actions={<><Button variant="ghost" size="sm" onClick={() => setSelectedScenario(null)}>Voltar para escolher cenário</Button><Button variant="ghost" size="sm" onClick={onOpenTechnicalMode}><Settings2 className="size-4" />Modo técnico</Button></>}
     />
 
     <div className="rounded-lg border border-info/20 bg-info/[0.05] px-4 py-3 text-sm">
@@ -241,6 +247,18 @@ export function SimpleAutomationLab({ onOpenTechnicalMode }: Props) {
       ].map(([label, value]) => <div key={label} className="rounded-lg bg-surface p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 font-medium">{value}</p></div>)}</div><div><p className="font-semibold">Recursos identificados</p><div className="mt-2 flex flex-wrap gap-2">{detail.capabilities?.functions.length ? detail.capabilities.functions.map((item) => <Badge key={item.code} variant="outline">{friendlyCapability(item.code)}</Badge>) : <span className="text-muted-foreground">Nenhum recurso adicional informado.</span>}</div></div>{detail.device.type === "smart_lock" && <p className="rounded-lg bg-warning/[0.08] p-3 text-warning-foreground">Acesso temporário ainda não disponível. O produto permanece em validação.</p>}</>}</div>}
     </Modal>
   </div>;
+}
+
+function ScenarioChooser({ onChoose, onOpenTechnicalMode }: { onChoose: (scenario: SimpleScenario) => void; onOpenTechnicalMode: () => void }) {
+  const scenarios: Array<{ id: SimpleScenario; number: string; title: string; integration: string; description: string; status: string; variant: "warning" | "success" }> = [
+    { id: "ekaza", number: "Cenário 01", title: "Casa Mairiporã", integration: "Ekaza", description: "Teste de fechadura e automação residencial.", status: "Em validação", variant: "warning" },
+    { id: "akubela", number: "Cenário 02", title: "Bancada Akubela PG42", integration: "Akubela", description: "Teste do painel HyPanel Elite 7 e dispositivos associados.", status: "Pronto para simulação", variant: "success" },
+  ];
+  return <div className="space-y-7"><PageHeader title="Automation Lab" description="Escolha um cenário de teste isolado. Nenhuma ação altera hóspedes, reservas ou dispositivos físicos." badge="Teste. Valide. Venda." actions={<Button variant="ghost" size="sm" onClick={onOpenTechnicalMode}><Settings2 className="size-4" />Modo técnico</Button>} /><section className="mx-auto max-w-5xl"><div className="mb-5"><h2 className="text-2xl font-semibold">Escolha o cenário de teste</h2><p className="mt-1 text-sm text-muted-foreground">Cada cenário tem seu próprio fluxo e permanece somente leitura.</p></div><div className="grid gap-5 md:grid-cols-2">{scenarios.map((item) => <button key={item.id} type="button" onClick={() => onChoose(item.id)} className="rounded-xl border bg-card p-6 text-left shadow-xs transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-medium"><p className="text-sm font-semibold text-primary">{item.number}</p><h3 className="mt-2 text-xl font-semibold">{item.title}</h3><p className="mt-4 text-sm text-muted-foreground">Integração: <span className="font-medium text-foreground">{item.integration}</span></p><p className="mt-2 text-sm text-muted-foreground">{item.description}</p><div className="mt-5"><Badge variant={item.variant}>{item.status}</Badge></div><span className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary">Abrir cenário <ArrowRight className="size-4" /></span></button>)}</div></section></div>;
+}
+
+function AkubelaSimpleExperience({ onBack, onOpenTechnicalMode }: { onBack: () => void; onOpenTechnicalMode: () => void }) {
+  return <div className="space-y-7"><PageHeader title="Cenário 02 — Bancada Akubela PG42" description="Teste simulado e somente leitura do HyPanel Elite 7 e dispositivos associados." badge="Pronto para simulação" actions={<><Button variant="ghost" size="sm" onClick={onBack}>Voltar para escolher cenário</Button><Button variant="ghost" size="sm" onClick={onOpenTechnicalMode}><Settings2 className="size-4" />Modo técnico</Button></>} /><div className="rounded-lg border border-info/20 bg-info/[0.05] px-4 py-3 text-sm"><p className="flex items-center gap-2 font-semibold"><ShieldCheck className="size-4 text-info" />SOMENTE LEITURA</p><p className="mt-1 text-muted-foreground">O modo Simulado não chama a OpenAPI. O modo OpenAPI permanece indisponível até a liberação das credenciais.</p></div><AkubelaScenarioPanel /></div>;
 }
 
 function StartScreen({ onStart }: { onStart: () => void }) {
