@@ -1,5 +1,7 @@
 # Modelo de domínio do Essencial Stay
 
+> **Documento de fundação.** O núcleo de integrações, dispositivos e operação evoluiu após esta fotografia. Consulte `docs/business/`, `docs/architecture/database.md` e as migrations vigentes para o estado atual; itens listados como futuros abaixo podem já possuir fundação técnica.
+
 ## Visão geral
 
 O domínio interno e o banco usam português do Brasil. `Organizacao` é a empresa cliente e a raiz do tenant; não existe uma camada genérica de cliente acima dela.

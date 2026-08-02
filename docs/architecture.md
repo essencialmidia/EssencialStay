@@ -1,5 +1,7 @@
 # Arquitetura do Essencial Stay
 
+> **Documento histórico.** Parte deste texto registra decisões de fundação e usa futuro para componentes que já evoluíram. Para o estado executável atual, consulte `docs/architecture/overview.md`, `frontend.md`, `backend.md` e `database.md`. Em caso de divergência, código, migrations vigentes e a base canônica em `docs/architecture/` prevalecem.
+
 ## Modelo oficial
 
 O Essencial Stay é o SaaS e não é cadastrado como cliente. Cada registro de `public.organizacoes` representa uma empresa cliente e constitui uma fronteira de isolamento.

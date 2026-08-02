@@ -1,0 +1,34 @@
+# Glossário
+
+- **Administrador da plataforma:** operador interno da Essencial Stay, separado de membros de clientes.
+- **Akubela:** provedor de automação com integração atual somente leitura.
+- **Allowlist:** conjunto explícito de dispositivos/ações autorizados.
+- **Ambiente:** espaço físico de uma propriedade, opcionalmente ligado a unidade ou ambiente pai.
+- **Automação:** configuração, recursos e futura execução inteligente no contexto da propriedade.
+- **Backend:** serviço HTTP Node que protege credenciais e consulta providers externos.
+- **Bloqueio de unidade:** impedimento operacional temporário, gerido no núcleo operacional.
+- **Capability:** recurso normalizado que um dispositivo oferece.
+- **Conexão de integração:** conta técnica externa da organização vinculável a propriedades.
+- **Empresa:** nome de negócio para `organizacao`, a empresa cliente.
+- **Ekaza:** marca/experiência integrada sobre a API técnica Tuya.
+- **Estado da unidade:** condição operacional atual, com histórico de transições.
+- **Hóspede:** pessoa atendida pela hospedagem; entidade operacional ainda planejada.
+- **Integração funcional:** capacidade da propriedade, como PMS ou channel manager; distinta da conexão técnica.
+- **Jornada do hóspede:** etapas da reserva ao pós-estadia; atualmente demonstrativas no frontend.
+- **Membro da organização:** vínculo de um perfil com papel e estado dentro de uma empresa.
+- **Migration:** alteração SQL versionada e ordenada do banco.
+- **Multi-tenant:** arquitetura que isola dados de várias empresas na mesma plataforma.
+- **Organização:** registro `organizacoes`; raiz e fronteira do tenant.
+- **Perfil:** dados da pessoa autenticada, com ID correspondente a `auth.users`.
+- **PIN temporário:** segredo de acesso de curta validade; sempre mascarado e fora de logs.
+- **PMS:** sistema de gestão hoteleira; integração operacional ainda não implementada.
+- **Propriedade (Property):** local de hospedagem pertencente a uma organização.
+- **Provider:** adapter que traduz uma API externa para contrato interno comum.
+- **Reserva:** ocupação planejada de unidade em período; persistência operacional ainda não implementada.
+- **RLS:** Row Level Security do PostgreSQL, fronteira principal de autorização por linha.
+- **RPC:** função do banco chamada como operação remota, usada para atomicidade e autorização.
+- **Service role:** chave privilegiada do Supabase, proibida no frontend.
+- **Supabase:** PostgreSQL, Auth e Storage usados pelo produto.
+- **Tenant:** organização/empresa cliente e seu conjunto isolado de dados.
+- **Tuya:** API técnica usada pela integração Ekaza em modo seguro de leitura.
+- **Unidade (Unit/Room):** espaço hospedável pertencente a uma propriedade; quarto é um de seus tipos.
