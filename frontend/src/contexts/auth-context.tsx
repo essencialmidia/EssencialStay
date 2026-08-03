@@ -2,6 +2,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import * as authRepository from "../repositories/auth.repository";
 import { ensurePerfil } from "../services/auth.service";
+import { isSupabaseConfigured } from "../lib/supabase";
 
 type AuthContextValue = {
   session: Session | null;
@@ -32,6 +33,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     let active = true;
 
     authRepository.getSession()

@@ -12,6 +12,7 @@ import { PasswordInput } from "../../components/ui/password-input";
 import { useToast } from "../../components/ui/toast";
 import { useAuth } from "../../contexts/auth-context";
 import { getAuthErrorMessage } from "../../lib/auth-error";
+import { isSupabaseConfigured } from "../../lib/supabase";
 import { login } from "../../services/auth.service";
 
 const schema = z.object({
@@ -47,6 +48,11 @@ export function LoginPage() {
 
   return (
     <AuthLayout title="Entrar no Essencial Stay" description="Acesse sua plataforma de gestão de hospedagens inteligentes.">
+      {!isSupabaseConfigured && (
+        <div role="alert" className="mb-4 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-foreground">
+          O acesso à plataforma não está configurado neste ambiente. Contate o suporte.
+        </div>
+      )}
       <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
         <FormField label="E-mail" error={errors.email?.message}>
           <Input type="email" autoComplete="email" placeholder="voce@empresa.com" autoFocus {...register("email")} />

@@ -25,6 +25,7 @@ import { DemoGuestPortalPage } from "../pages/demo-guest-portal";
 import { DemoVilaNovaPortalPage } from "../pages/demo-vila-nova-portal";
 import { ExperienciaHospedePage } from "../pages/experiencia-hospede";
 import { GuestCrmPage } from "../pages/guest-crm";
+import { HomePage } from "../pages/home";
 import { IntegracoesPage } from "../pages/integracoes";
 import { ForbiddenPage } from "../pages/forbidden";
 import { ModulePage } from "../pages/module-page";
@@ -42,6 +43,7 @@ import { ProtectedRoute } from "./protected-route";
 import { PublicRoute } from "./public-route";
 
 const routes = [
+  { path: "/", element: <HomePage /> },
   { path: "/demo/29-07", element: <DemoAdminPage /> },
   { path: "/demo/29-07/portal", element: <DemoGuestPortalPage /> },
   { path: "/s/hotel-monaco-demo", element: <DemoGuestPortalPage /> },
@@ -73,10 +75,8 @@ const routes = [
         ] }],
       },
       {
-        path: "/",
         errorElement: <NotFoundPage />,
         children: [{ element: <OrganizationGate />, children: [{ element: <AppShell />, children: [
-          { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: "dashboard", element: <DashboardPage /> },
           { path: "propriedades", element: <PropriedadesPage /> },
           { path: "propriedades/nova", element: <NovaPropriedadePage /> },

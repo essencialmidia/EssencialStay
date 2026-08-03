@@ -12,7 +12,7 @@ export function GlobalHomeButton() {
   return (
     <>
       <Outlet />
-      {!location.pathname.startsWith("/demo/29-07") && location.pathname !== "/s/hotel-monaco-demo" && <div className="fixed bottom-5 right-5 z-[55] sm:bottom-6 sm:right-6">
+      {location.pathname !== "/" && !location.pathname.startsWith("/demo/29-07") && location.pathname !== "/s/hotel-monaco-demo" && <div className="fixed bottom-5 right-5 z-[55] sm:bottom-6 sm:right-6">
         <Tooltip content="Voltar para a tela principal" side="top">
           <Button
             type="button"
